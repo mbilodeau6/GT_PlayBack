@@ -1,0 +1,804 @@
+/**
+ * Main application controller.
+ */
+
+const App = {
+    currentGame: null,
+    currentGameId: null,
+    possibleActions: [],
+    selectedPlayerId: null,
+    selectionMode: null, // 'vertex', 'edge', 'tile'
+    selectableIds: [],
+    pendingAction: null,
+
+    // Zoom state
+    zoomLevel: 1.0,
+    minZoom: 0.5,
+    maxZoom: 2.5,
+    zoomStep: 0.25,
+
+    init() {
+        // Initialize board
+        const svgElement = document.getElementById('board');
+        Board.init(svgElement);
+
+        // Set up board click handlers
+        Board.onVertexClick = (vertexId) => this.handleBoardClick('vertex', vertexId);
+        Board.onEdgeClick = (edgeId) => this.handleBoardClick('edge', edgeId);
+        Board.onTileClick = (tileId) => this.handleBoardClick('tile', tileId);
+
+        this.bindEventHandlers();
+        this.loadSavedGameId();
+        this.updateSettingsUI();
+
+        this.log('Application initialized');
+    },
+
+    bindEventHandlers() {
+        // Zoom controls
+        document.getElementById('btn-zoom-in').addEventListener('click', () => this.zoom(this.zoomStep));
+        document.getElementById('btn-zoom-out').addEventListener('click', () => this.zoom(-this.zoomStep));
+        document.getElementById('btn-zoom-reset').addEventListener('click', () => this.resetZoom());
+        document.getElementById('board-container').addEventListener('wheel', (e) => {
+            e.preventDefault();
+            this.zoom(e.deltaY > 0 ? -this.zoomStep : this.zoomStep);
+        });
+
+        // Settings modal
+        document.getElementById('btn-settings').addEventListener('click', () => this.openSettings());
+        document.getElementById('btn-save-settings').addEventListener('click', () => this.saveSettings());
+        document.getElementById('btn-cancel-settings').addEventListener('click', () => this.closeSettings());
+
+        // Game setup
+        document.getElementById('btn-new-game').addEventListener('click', () => this.createNewGame());
+        document.getElementById('btn-load-game').addEventListener('click', () => this.loadGameById());
+        document.getElementById('btn-refresh').addEventListener('click', () => this.refreshGameState());
+
+        // Players
+        document.getElementById('btn-add-player').addEventListener('click', () => this.addPlayer());
+        document.getElementById('btn-start-game').addEventListener('click', () => this.startGame());
+
+        // Selection cancel
+        document.getElementById('btn-cancel-selection').addEventListener('click', () => this.cancelSelection());
+
+        // Modal cancels
+        document.getElementById('btn-cancel-trade').addEventListener('click', () => this.closeModal('trade-modal'));
+        document.getElementById('btn-cancel-discard').addEventListener('click', () => this.closeModal('discard-modal'));
+        document.getElementById('btn-confirm-discard').addEventListener('click', () => this.confirmDiscard());
+        document.getElementById('btn-cancel-resource').addEventListener('click', () => this.closeModal('resource-modal'));
+        document.getElementById('btn-confirm-resource').addEventListener('click', () => this.confirmResourceSelection());
+    },
+
+    // ==================== ZOOM ====================
+
+    zoom(delta) {
+        this.zoomLevel = Math.max(this.minZoom, Math.min(this.maxZoom, this.zoomLevel + delta));
+        this.applyZoom();
+    },
+
+    resetZoom() {
+        this.zoomLevel = 1.0;
+        this.applyZoom();
+    },
+
+    applyZoom() {
+        document.getElementById('board').style.transform = `scale(${this.zoomLevel})`;
+        document.getElementById('zoom-level').textContent = `${Math.round(this.zoomLevel * 100)}%`;
+    },
+
+    // ==================== SETTINGS ====================
+
+    openSettings() {
+        document.getElementById('api-url-input').value = API.baseUrl;
+        document.getElementById('api-key-input').value = API.apiKey;
+        document.getElementById('settings-modal').classList.remove('hidden');
+    },
+
+    saveSettings() {
+        const url = document.getElementById('api-url-input').value.trim();
+        const key = document.getElementById('api-key-input').value.trim();
+        API.configure(url, key);
+        this.closeSettings();
+        this.log('Settings saved', 'success');
+    },
+
+    closeSettings() {
+        document.getElementById('settings-modal').classList.add('hidden');
+    },
+
+    updateSettingsUI() {
+        document.getElementById('api-url-input').value = API.baseUrl;
+    },
+
+    // ==================== GAME MANAGEMENT ====================
+
+    async createNewGame() {
+        const gameType = document.getElementById('game-type-select').value;
+        this.log(`Creating new ${gameType} game...`);
+
+        const response = await API.createGame(gameType);
+        if (response.success) {
+            this.handleGameResponse(response);
+            this.saveGameId(response.gameState.id);
+            this.log(`Game created: ${response.gameState.id}`, 'success');
+        } else {
+            this.log(`Error: ${response.errorMessage}`, 'error');
+        }
+    },
+
+    async loadGameById() {
+        const gameId = document.getElementById('game-id-input').value.trim();
+        if (!gameId) {
+            this.log('Please enter a game ID', 'error');
+            return;
+        }
+
+        this.log(`Loading game ${gameId}...`);
+        const response = await API.getGame(gameId);
+        if (response.success) {
+            this.handleGameResponse(response);
+            this.saveGameId(gameId);
+            this.log('Game loaded', 'success');
+        } else {
+            this.log(`Error: ${response.errorMessage}`, 'error');
+        }
+    },
+
+    async refreshGameState() {
+        if (!this.currentGameId) {
+            this.log('No game loaded', 'error');
+            return;
+        }
+
+        this.log('Refreshing game state...');
+        const response = await API.getGame(this.currentGameId);
+        if (response.success) {
+            this.handleGameResponse(response);
+            this.log('Game state refreshed', 'success');
+        } else {
+            this.log(`Error: ${response.errorMessage}`, 'error');
+        }
+    },
+
+    saveGameId(gameId) {
+        this.currentGameId = gameId;
+        localStorage.setItem('catan_current_game', gameId);
+        document.getElementById('game-id-input').value = gameId;
+    },
+
+    loadSavedGameId() {
+        const savedGameId = localStorage.getItem('catan_current_game');
+        if (savedGameId) {
+            document.getElementById('game-id-input').value = savedGameId;
+        }
+    },
+
+    handleGameResponse(response) {
+        this.currentGame = response.gameState;
+        this.currentGameId = response.gameState.id;
+        this.possibleActions = response.possibleActions || [];
+
+        this.displayGame();
+        this.updateUI();
+    },
+
+    displayGame() {
+        const game = this.currentGame;
+
+        // Update header
+        document.getElementById('game-id').textContent = `Game: ${game.id.substring(0, 8)}...`;
+        document.getElementById('game-phase').textContent = game.phase?.phaseState || '';
+
+        // Update current player
+        if (game.phase?.currentPlayerId) {
+            const currentPlayer = game.players.find(p => p.id === game.phase.currentPlayerId);
+            if (currentPlayer) {
+                document.getElementById('current-player').textContent = `Current: ${currentPlayer.name}`;
+                document.getElementById('current-player').style.color = this.getPlayerCSSColor(currentPlayer.color);
+            }
+        } else {
+            document.getElementById('current-player').textContent = '';
+        }
+
+        // Update dice display
+        if (game.dice && (game.dice.die1.value > 0 || game.dice.die2.value > 0)) {
+            document.getElementById('dice-display').classList.remove('hidden');
+            document.getElementById('die1').textContent = game.dice.die1.value || '-';
+            document.getElementById('die2').textContent = game.dice.die2.value || '-';
+        } else {
+            document.getElementById('dice-display').classList.add('hidden');
+        }
+
+        // Render board
+        Board.render(game);
+
+        // Render players
+        this.renderPlayers();
+
+        // Enable refresh button
+        document.getElementById('btn-refresh').disabled = false;
+    },
+
+    updateUI() {
+        const game = this.currentGame;
+        const phase = game?.phase?.phaseState;
+
+        // Show/hide sections based on phase
+        const isSetup = phase === 'SettingUpBoard';
+        const isPlaying = phase && phase !== 'SettingUpBoard' && phase !== 'GameOver';
+
+        document.getElementById('add-player-form').classList.toggle('hidden', !isSetup);
+        document.getElementById('btn-start-game').classList.toggle('hidden', !isSetup || game.players.length < 2);
+        document.getElementById('actions-section').classList.toggle('hidden', !isPlaying && this.possibleActions.length === 0);
+
+        // Update actions
+        this.renderActions();
+    },
+
+    // ==================== PLAYERS ====================
+
+    renderPlayers() {
+        const container = document.getElementById('players-list');
+        container.innerHTML = '';
+
+        if (!this.currentGame?.players) return;
+
+        const isSetup = this.currentGame.phase?.phaseState === 'SettingUpBoard';
+
+        this.currentGame.players.forEach(player => {
+            const card = document.createElement('div');
+            card.className = 'player-card';
+            card.style.borderLeftColor = this.getPlayerCSSColor(player.color);
+
+            if (this.currentGame.phase?.currentPlayerId === player.id) {
+                card.classList.add('current');
+            }
+
+            let html = `
+                <div class="player-card-header">
+                    <div class="player-name">${player.name} ${player.isBot ? '(Bot)' : ''}</div>
+                    ${isSetup ? `<button class="remove-btn" data-player-id="${player.id}">Remove</button>` : ''}
+                </div>
+                <div class="player-stats">
+                    VP: ${player.victoryPoints} |
+                    Cards: ${player.resourceCount} |
+                    Dev: ${player.developmentCardCount}
+                </div>
+            `;
+
+            // Show resources for human players or all in dev mode
+            if (!player.isBot && player.resources) {
+                const res = player.resources;
+                html += `<div class="player-resources">
+                    B:${res.Brick} W:${res.Wood} O:${res.Ore} G:${res.Grain} S:${res.Wool}
+                </div>`;
+            }
+
+            card.innerHTML = html;
+
+            // Bind remove button if in setup
+            if (isSetup) {
+                const removeBtn = card.querySelector('.remove-btn');
+                if (removeBtn) {
+                    removeBtn.addEventListener('click', () => this.removePlayer(player.id));
+                }
+            }
+
+            container.appendChild(card);
+        });
+    },
+
+    async addPlayer() {
+        if (!this.currentGameId) {
+            this.log('No game loaded', 'error');
+            return;
+        }
+
+        const name = document.getElementById('player-name-input').value.trim();
+        const color = document.getElementById('player-color-select').value;
+        const isBot = document.getElementById('player-is-bot').checked;
+
+        if (!name) {
+            this.log('Please enter a player name', 'error');
+            return;
+        }
+
+        this.log(`Adding player ${name}...`);
+        const response = await API.addPlayer(this.currentGameId, name, isBot, color || null);
+
+        if (response.success) {
+            this.handleGameResponse(response);
+            document.getElementById('player-name-input').value = '';
+            this.log(`Player ${name} added`, 'success');
+        } else {
+            this.log(`Error: ${response.errorMessage}`, 'error');
+        }
+    },
+
+    async removePlayer(playerId) {
+        if (!this.currentGameId) return;
+
+        this.log(`Removing player ${playerId}...`);
+        const response = await API.removePlayer(this.currentGameId, playerId);
+
+        if (response.success) {
+            this.handleGameResponse(response);
+            this.log('Player removed', 'success');
+        } else {
+            this.log(`Error: ${response.errorMessage}`, 'error');
+        }
+    },
+
+    async startGame() {
+        if (!this.currentGameId) return;
+
+        this.log('Starting game...');
+        const response = await API.startGame(this.currentGameId);
+
+        if (response.success) {
+            this.handleGameResponse(response);
+            this.log('Game started!', 'success');
+        } else {
+            this.log(`Error: ${response.errorMessage}`, 'error');
+        }
+    },
+
+    // ==================== ACTIONS ====================
+
+    renderActions() {
+        const container = document.getElementById('actions-list');
+        container.innerHTML = '';
+
+        if (!this.possibleActions || this.possibleActions.length === 0) {
+            container.innerHTML = '<div class="log-entry">No actions available</div>';
+            return;
+        }
+
+        // Group actions by type for cleaner display
+        this.possibleActions.forEach(action => {
+            const btn = document.createElement('button');
+            btn.className = 'action-btn';
+
+            switch (action.action) {
+                case 'RollDice':
+                    btn.textContent = 'Roll Dice';
+                    btn.classList.add('highlight');
+                    btn.onclick = () => this.doRollDice(action.playerId);
+                    break;
+
+                case 'PlaceSettlement':
+                    btn.textContent = `Place Settlement (${action.vertexIds?.length || 0} spots)`;
+                    btn.onclick = () => this.startSelection('vertex', action.vertexIds, action.playerId, 'PlaceSettlement');
+                    break;
+
+                case 'PlaceRoad':
+                    btn.textContent = `Place Road (${action.edgeIds?.length || 0} spots)`;
+                    btn.onclick = () => this.startSelection('edge', action.edgeIds, action.playerId, 'PlaceRoad');
+                    break;
+
+                case 'UpgradeSettlement':
+                    btn.textContent = `Upgrade to City (${action.vertexIds?.length || 0})`;
+                    btn.onclick = () => this.startSelection('vertex', action.vertexIds, action.playerId, 'UpgradeSettlement');
+                    break;
+
+                case 'PlaceRobber':
+                    btn.textContent = `Place Robber (${action.tileIds?.length || 0} tiles)`;
+                    btn.onclick = () => this.startSelection('tile', action.tileIds, action.playerId, 'PlaceRobber');
+                    break;
+
+                case 'StealResource':
+                    btn.textContent = `Steal from: ${action.targetPlayerIds?.join(', ')}`;
+                    btn.onclick = () => this.showStealOptions(action);
+                    break;
+
+                case 'DiscardCards':
+                    btn.textContent = `Discard ${action.count} Cards`;
+                    btn.classList.add('highlight');
+                    btn.onclick = () => this.showDiscardModal(action);
+                    break;
+
+                case 'BuyDevelopmentCard':
+                    btn.textContent = 'Buy Dev Card';
+                    btn.onclick = () => this.doBuyDevCard(action.playerId);
+                    break;
+
+                case 'TradeWithBank':
+                    btn.textContent = `Bank Trade (${action.trades?.length || 0} options)`;
+                    btn.onclick = () => this.showTradeModal(action);
+                    break;
+
+                case 'PlayKnight':
+                    btn.textContent = 'Play Knight';
+                    btn.onclick = () => this.startSelection('tile', action.tileIds, action.playerId, 'PlayKnight');
+                    break;
+
+                case 'PlayRoadBuilding':
+                    btn.textContent = 'Play Road Building';
+                    btn.onclick = () => this.doPlayRoadBuilding(action.playerId);
+                    break;
+
+                case 'PlayYearOfPlenty':
+                    btn.textContent = 'Play Year of Plenty';
+                    btn.onclick = () => this.showYearOfPlentyModal(action.playerId);
+                    break;
+
+                case 'PlayMonopoly':
+                    btn.textContent = 'Play Monopoly';
+                    btn.onclick = () => this.showMonopolyModal(action.playerId);
+                    break;
+
+                case 'EndTurn':
+                    btn.textContent = 'End Turn';
+                    btn.classList.add('secondary');
+                    btn.onclick = () => this.doEndTurn(action.playerId);
+                    break;
+
+                default:
+                    btn.textContent = action.action;
+                    btn.disabled = true;
+            }
+
+            container.appendChild(btn);
+        });
+    },
+
+    // ==================== SELECTION MODE ====================
+
+    startSelection(mode, ids, playerId, actionType) {
+        if (!ids || ids.length === 0) {
+            this.log('No valid locations for this action', 'error');
+            return;
+        }
+
+        this.selectionMode = mode;
+        this.selectableIds = ids;
+        this.selectedPlayerId = playerId;
+        this.pendingAction = actionType;
+
+        // Show selection info
+        document.getElementById('selection-info').classList.remove('hidden');
+        document.getElementById('selection-type').textContent = `${actionType} - click a ${mode}`;
+
+        // Update board to show selectable elements
+        Board.setSelectableElements(mode, ids);
+
+        this.log(`Select a ${mode} for ${actionType}`);
+    },
+
+    cancelSelection() {
+        this.selectionMode = null;
+        this.selectableIds = [];
+        this.selectedPlayerId = null;
+        this.pendingAction = null;
+
+        document.getElementById('selection-info').classList.add('hidden');
+        Board.clearSelectableElements();
+
+        this.log('Selection cancelled');
+    },
+
+    async handleBoardClick(type, id) {
+        if (this.selectionMode !== type) return;
+        if (!this.selectableIds.includes(id)) return;
+
+        const playerId = this.selectedPlayerId;
+        const action = this.pendingAction;
+
+        this.cancelSelection();
+
+        this.log(`${action}: ${id}`);
+
+        let response;
+        switch (action) {
+            case 'PlaceSettlement':
+                response = await API.buildSettlement(this.currentGameId, playerId, id);
+                break;
+            case 'PlaceRoad':
+                response = await API.buildRoad(this.currentGameId, playerId, id);
+                break;
+            case 'UpgradeSettlement':
+                response = await API.buildCity(this.currentGameId, playerId, id);
+                break;
+            case 'PlaceRobber':
+                response = await API.placeRobber(this.currentGameId, playerId, id);
+                break;
+            case 'PlayKnight':
+                response = await API.playKnight(this.currentGameId, playerId, id);
+                break;
+        }
+
+        if (response?.success) {
+            this.handleGameResponse(response);
+            this.log(`${action} completed`, 'success');
+        } else {
+            this.log(`Error: ${response?.errorMessage}`, 'error');
+        }
+    },
+
+    // ==================== GAME ACTIONS ====================
+
+    async doRollDice(playerId) {
+        this.log('Rolling dice...');
+        const response = await API.rollDice(this.currentGameId);
+
+        if (response.success) {
+            this.handleGameResponse(response);
+            const dice = response.gameState.dice;
+            this.log(`Rolled ${dice.die1.value} + ${dice.die2.value} = ${dice.die1.value + dice.die2.value}`, 'success');
+        } else {
+            this.log(`Error: ${response.errorMessage}`, 'error');
+        }
+    },
+
+    async doEndTurn(playerId) {
+        this.log('Ending turn...');
+        const response = await API.endTurn(this.currentGameId);
+
+        if (response.success) {
+            this.handleGameResponse(response);
+            this.log('Turn ended', 'success');
+        } else {
+            this.log(`Error: ${response.errorMessage}`, 'error');
+        }
+    },
+
+    async doBuyDevCard(playerId) {
+        this.log('Buying development card...');
+        const response = await API.buyDevCard(this.currentGameId, playerId);
+
+        if (response.success) {
+            this.handleGameResponse(response);
+            this.log('Development card purchased', 'success');
+        } else {
+            this.log(`Error: ${response.errorMessage}`, 'error');
+        }
+    },
+
+    async doPlayRoadBuilding(playerId) {
+        this.log('Playing Road Building...');
+        const response = await API.playRoadBuilding(this.currentGameId, playerId);
+
+        if (response.success) {
+            this.handleGameResponse(response);
+            this.log('Road Building played', 'success');
+        } else {
+            this.log(`Error: ${response.errorMessage}`, 'error');
+        }
+    },
+
+    // ==================== MODALS ====================
+
+    showTradeModal(action) {
+        const container = document.getElementById('trade-options');
+        container.innerHTML = '';
+
+        if (!action.trades || action.trades.length === 0) {
+            container.innerHTML = '<div>No trades available</div>';
+        } else {
+            action.trades.forEach(trade => {
+                const div = document.createElement('div');
+                div.className = 'trade-option';
+
+                const offerStr = Object.entries(trade.offer).map(([r, n]) => `${n} ${r}`).join(', ');
+                const requestStr = Object.entries(trade.request).map(([r, n]) => `${n} ${r}`).join(', ');
+
+                div.innerHTML = `<span>Give: ${offerStr}</span><span>Get: ${requestStr}</span>`;
+                div.onclick = () => this.executeTrade(action.playerId, trade.offer, trade.request);
+
+                container.appendChild(div);
+            });
+        }
+
+        document.getElementById('trade-modal').classList.remove('hidden');
+    },
+
+    async executeTrade(playerId, offer, request) {
+        this.closeModal('trade-modal');
+        this.log('Trading with bank...');
+
+        const response = await API.tradeWithBank(this.currentGameId, playerId, offer, request);
+
+        if (response.success) {
+            this.handleGameResponse(response);
+            this.log('Trade completed', 'success');
+        } else {
+            this.log(`Error: ${response.errorMessage}`, 'error');
+        }
+    },
+
+    showDiscardModal(action) {
+        const player = this.currentGame.players.find(p => p.id === action.playerId);
+        if (!player) return;
+
+        document.getElementById('discard-info').textContent =
+            `${player.name} must discard ${action.count} cards:`;
+
+        const container = document.getElementById('discard-selection');
+        container.innerHTML = '';
+
+        this.discardCount = action.count;
+        this.discardPlayerId = action.playerId;
+        this.selectedDiscards = [];
+
+        // Create cards for each resource the player has
+        const resources = player.resources;
+        Object.entries(resources).forEach(([resource, count]) => {
+            for (let i = 0; i < count; i++) {
+                const card = document.createElement('div');
+                card.className = `discard-card resource-${resource}`;
+                card.textContent = resource.substring(0, 1);
+                card.dataset.resource = resource;
+                card.onclick = () => this.toggleDiscardCard(card, resource);
+                container.appendChild(card);
+            }
+        });
+
+        document.getElementById('btn-confirm-discard').disabled = true;
+        document.getElementById('discard-modal').classList.remove('hidden');
+    },
+
+    toggleDiscardCard(card, resource) {
+        if (card.classList.contains('selected')) {
+            card.classList.remove('selected');
+            const idx = this.selectedDiscards.indexOf(resource);
+            if (idx > -1) this.selectedDiscards.splice(idx, 1);
+        } else if (this.selectedDiscards.length < this.discardCount) {
+            card.classList.add('selected');
+            this.selectedDiscards.push(resource);
+        }
+
+        document.getElementById('btn-confirm-discard').disabled =
+            this.selectedDiscards.length !== this.discardCount;
+    },
+
+    async confirmDiscard() {
+        this.closeModal('discard-modal');
+        this.log(`Discarding ${this.selectedDiscards.length} cards...`);
+
+        const response = await API.discardCards(
+            this.currentGameId,
+            this.discardPlayerId,
+            this.selectedDiscards
+        );
+
+        if (response.success) {
+            this.handleGameResponse(response);
+            this.log('Cards discarded', 'success');
+        } else {
+            this.log(`Error: ${response.errorMessage}`, 'error');
+        }
+    },
+
+    showStealOptions(action) {
+        // For now, if there's only one target, steal from them directly
+        if (action.targetPlayerIds.length === 1) {
+            this.doSteal(action.playerId, action.targetPlayerIds[0]);
+        } else {
+            // TODO: Show modal to pick target
+            this.log('Multiple steal targets - picking first one');
+            this.doSteal(action.playerId, action.targetPlayerIds[0]);
+        }
+    },
+
+    async doSteal(playerId, targetPlayerId) {
+        this.log(`Stealing from ${targetPlayerId}...`);
+        // Note: The steal happens automatically after placing robber in most implementations
+        // If your API requires a separate call, add it here
+    },
+
+    showYearOfPlentyModal(playerId) {
+        document.getElementById('resource-modal-title').textContent = 'Year of Plenty - Select 2 Resources';
+        this.resourceModalType = 'YearOfPlenty';
+        this.resourceModalPlayerId = playerId;
+        this.selectedResources = [];
+
+        this.renderResourceOptions(2);
+        document.getElementById('resource-modal').classList.remove('hidden');
+    },
+
+    showMonopolyModal(playerId) {
+        document.getElementById('resource-modal-title').textContent = 'Monopoly - Select 1 Resource';
+        this.resourceModalType = 'Monopoly';
+        this.resourceModalPlayerId = playerId;
+        this.selectedResources = [];
+
+        this.renderResourceOptions(1);
+        document.getElementById('resource-modal').classList.remove('hidden');
+    },
+
+    renderResourceOptions(maxSelect) {
+        this.maxResourceSelect = maxSelect;
+        const container = document.getElementById('resource-selection');
+        container.innerHTML = '';
+
+        const resources = ['Brick', 'Wood', 'Ore', 'Grain', 'Wool'];
+        resources.forEach(resource => {
+            const div = document.createElement('div');
+            div.className = `resource-option resource-${resource}`;
+            div.textContent = resource;
+            div.onclick = () => this.toggleResourceOption(div, resource);
+            container.appendChild(div);
+        });
+
+        document.getElementById('btn-confirm-resource').disabled = true;
+    },
+
+    toggleResourceOption(div, resource) {
+        if (div.classList.contains('selected')) {
+            div.classList.remove('selected');
+            const idx = this.selectedResources.indexOf(resource);
+            if (idx > -1) this.selectedResources.splice(idx, 1);
+        } else if (this.selectedResources.length < this.maxResourceSelect) {
+            div.classList.add('selected');
+            this.selectedResources.push(resource);
+        }
+
+        document.getElementById('btn-confirm-resource').disabled =
+            this.selectedResources.length !== this.maxResourceSelect;
+    },
+
+    async confirmResourceSelection() {
+        this.closeModal('resource-modal');
+
+        let response;
+        if (this.resourceModalType === 'YearOfPlenty') {
+            this.log('Playing Year of Plenty...');
+            response = await API.playYearOfPlenty(
+                this.currentGameId,
+                this.resourceModalPlayerId,
+                this.selectedResources[0],
+                this.selectedResources[1]
+            );
+        } else if (this.resourceModalType === 'Monopoly') {
+            this.log('Playing Monopoly...');
+            response = await API.playMonopoly(
+                this.currentGameId,
+                this.resourceModalPlayerId,
+                this.selectedResources[0]
+            );
+        }
+
+        if (response?.success) {
+            this.handleGameResponse(response);
+            this.log(`${this.resourceModalType} played`, 'success');
+        } else {
+            this.log(`Error: ${response?.errorMessage}`, 'error');
+        }
+    },
+
+    closeModal(modalId) {
+        document.getElementById(modalId).classList.add('hidden');
+    },
+
+    // ==================== UTILITIES ====================
+
+    getPlayerCSSColor(colorName) {
+        const colors = {
+            'Red': '#e74c3c',
+            'Blue': '#3498db',
+            'Orange': '#e67e22',
+            'White': '#ecf0f1'
+        };
+        return colors[colorName] || '#888';
+    },
+
+    log(message, type = '') {
+        const container = document.getElementById('status-log');
+        const entry = document.createElement('div');
+        entry.className = `log-entry ${type}`;
+        entry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+        container.insertBefore(entry, container.firstChild);
+
+        // Keep only last 50 entries
+        while (container.children.length > 50) {
+            container.removeChild(container.lastChild);
+        }
+
+        console.log(`[${type || 'info'}] ${message}`);
+    }
+};
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    App.init();
+});

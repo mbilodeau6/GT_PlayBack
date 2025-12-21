@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catan Board Viewer</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>Catan Board Viewer</h1>
+            <div id="game-info">
+                <span id="game-id">No game loaded</span>
+                <span id="game-phase"></span>
+                <span id="current-player"></span>
+            </div>
+            <button id="btn-settings" class="icon-btn" title="Settings">Settings</button>
+        </header>
+
+        <main>
+            <div id="board-container">
+                <div id="zoom-controls">
+                    <button id="btn-zoom-in" title="Zoom In">+</button>
+                    <span id="zoom-level">100%</span>
+                    <button id="btn-zoom-out" title="Zoom Out">-</button>
+                    <button id="btn-zoom-reset" title="Reset Zoom">Reset</button>
+                </div>
+                <svg id="board" viewBox="-400 -350 800 700"></svg>
+                <div id="dice-display" class="hidden">
+                    <span id="die1">-</span>
+                    <span id="die2">-</span>
+                </div>
+            </div>
+
+            <aside id="sidebar">
+                <!-- Game Setup Section -->
+                <section id="setup-section">
+                    <h2>Game Setup</h2>
+                    <div class="button-group">
+                        <button id="btn-new-game">New Game</button>
+                        <select id="game-type-select">
+                            <option value="Starter">Starter</option>
+                            <option value="Default">Default</option>
+                        </select>
+                    </div>
+                    <div class="button-group">
+                        <input type="text" id="game-id-input" placeholder="Game ID...">
+                        <button id="btn-load-game">Load</button>
+                    </div>
+                    <button id="btn-refresh" disabled>Refresh State</button>
+                </section>
+
+                <!-- Players Section -->
+                <section id="players-section">
+                    <h2>Players</h2>
+                    <div id="players-list"></div>
+                    <div id="add-player-form" class="hidden">
+                        <input type="text" id="player-name-input" placeholder="Player name...">
+                        <select id="player-color-select">
+                            <option value="">Any Color</option>
+                            <option value="Red">Red</option>
+                            <option value="Blue">Blue</option>
+                            <option value="Orange">Orange</option>
+                            <option value="White">White</option>
+                        </select>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="player-is-bot"> Bot
+                        </label>
+                        <button id="btn-add-player">Add Player</button>
+                    </div>
+                    <button id="btn-start-game" class="hidden">Start Game</button>
+                </section>
+
+                <!-- Actions Section -->
+                <section id="actions-section" class="hidden">
+                    <h2>Actions</h2>
+                    <div id="actions-list"></div>
+                    <div id="selection-info" class="hidden">
+                        <span id="selection-label">Select:</span>
+                        <span id="selection-type"></span>
+                        <button id="btn-cancel-selection" class="small-btn">Cancel</button>
+                    </div>
+                </section>
+
+                <!-- Resources Section (for current player) -->
+                <section id="resources-section" class="hidden">
+                    <h2>Resources</h2>
+                    <div id="resources-display"></div>
+                </section>
+
+                <!-- Dev Cards Section -->
+                <section id="dev-cards-section" class="hidden">
+                    <h2>Development Cards</h2>
+                    <div id="dev-cards-list"></div>
+                </section>
+
+                <!-- Status/Log Section -->
+                <section id="status-section">
+                    <h2>Status</h2>
+                    <div id="status-log"></div>
+                </section>
+            </aside>
+        </main>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>API Settings</h2>
+                <div class="form-group">
+                    <label for="api-url-input">API Base URL:</label>
+                    <input type="text" id="api-url-input" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                    <label for="api-key-input">API Key:</label>
+                    <input type="password" id="api-key-input" placeholder="x-functions-key value">
+                </div>
+                <div class="button-group">
+                    <button id="btn-save-settings">Save</button>
+                    <button id="btn-cancel-settings">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trade Modal -->
+        <div id="trade-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>Bank Trade</h2>
+                <div id="trade-options"></div>
+                <div class="button-group">
+                    <button id="btn-cancel-trade">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Discard Modal -->
+        <div id="discard-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>Discard Cards</h2>
+                <p id="discard-info">Select cards to discard:</p>
+                <div id="discard-selection"></div>
+                <div class="button-group">
+                    <button id="btn-confirm-discard" disabled>Confirm</button>
+                    <button id="btn-cancel-discard">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resource Selection Modal (Year of Plenty, Monopoly) -->
+        <div id="resource-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2 id="resource-modal-title">Select Resources</h2>
+                <div id="resource-selection"></div>
+                <div class="button-group">
+                    <button id="btn-confirm-resource" disabled>Confirm</button>
+                    <button id="btn-cancel-resource">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/hexmath.js"></script>
+    <script src="js/board.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
