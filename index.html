@@ -126,8 +126,18 @@
         <div id="trade-modal" class="modal hidden">
             <div class="modal-content">
                 <h2>Bank Trade</h2>
-                <div id="trade-options"></div>
+                <p id="trade-info">Select resources to offer:</p>
+                <div id="trade-offer-section">
+                    <h3>You Give:</h3>
+                    <div id="trade-offer-cards"></div>
+                </div>
+                <div id="trade-request-section">
+                    <h3>You Get:</h3>
+                    <div id="trade-request-options"></div>
+                </div>
+                <div id="trade-summary"></div>
                 <div class="button-group">
+                    <button id="btn-confirm-trade" disabled>Trade</button>
                     <button id="btn-cancel-trade">Cancel</button>
                 </div>
             </div>

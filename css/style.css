@@ -438,28 +438,41 @@ select:focus {
     border-bottom: 1px solid #0f3460;
 }
 
-/* Trade Options */
-#trade-options {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    max-height: 300px;
-    overflow-y: auto;
+/* Trade Modal */
+#trade-offer-section,
+#trade-request-section {
     margin-bottom: 1rem;
 }
 
-.trade-option {
-    background-color: #0f3460;
-    padding: 0.75rem;
-    border-radius: 6px;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+#trade-offer-section h3,
+#trade-request-section h3 {
+    font-size: 0.9rem;
+    color: #aaa;
+    margin-bottom: 0.5rem;
 }
 
-.trade-option:hover {
-    background-color: #1a4a80;
+#trade-offer-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+#trade-request-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+#trade-summary {
+    background-color: #0a1628;
+    padding: 0.75rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    text-align: center;
+    color: #e94560;
+    font-weight: bold;
 }
 
 /* Discard Selection */
@@ -502,6 +515,11 @@ select:focus {
     cursor: pointer;
     border: 2px solid transparent;
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    min-width: 70px;
 }
 
 .resource-option:hover {
@@ -511,6 +529,16 @@ select:focus {
 .resource-option.selected {
     border-color: #e94560;
     background-color: #1a4a80;
+}
+
+.resource-option .resource-name {
+    font-size: 0.85rem;
+}
+
+.resource-option .resource-count {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #e94560;
 }
 
 /* ==================== SVG Board Styles ==================== */

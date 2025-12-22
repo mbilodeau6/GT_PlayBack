@@ -63,6 +63,7 @@ const App = {
 
         // Modal cancels
         document.getElementById('btn-cancel-trade').addEventListener('click', () => this.closeModal('trade-modal'));
+        document.getElementById('btn-confirm-trade').addEventListener('click', () => this.confirmTrade());
         document.getElementById('btn-cancel-discard').addEventListener('click', () => this.closeModal('discard-modal'));
         document.getElementById('btn-confirm-discard').addEventListener('click', () => this.confirmDiscard());
         document.getElementById('btn-cancel-resource').addEventListener('click', () => this.closeModal('resource-modal'));
@@ -573,30 +574,180 @@ const App = {
     // ==================== MODALS ====================
 
     showTradeModal(action) {
-        const container = document.getElementById('trade-options');
-        container.innerHTML = '';
+        const playerId = this.currentGame.phase.currentPlayerId;
+        const player = this.currentGame.players.find(p => p.id === playerId);
+        if (!player) return;
 
-        if (!action.trades || action.trades.length === 0) {
-            container.innerHTML = '<div>No trades available</div>';
-        } else {
-            action.trades.forEach(trade => {
-                const div = document.createElement('div');
-                div.className = 'trade-option';
+        // Determine best trade rates based on ports
+        this.tradeRates = this.calculateTradeRates(playerId);
+        this.selectedTradeOffer = [];
+        this.selectedTradeRequest = null;
 
-                const offerStr = Object.entries(trade.offer).map(([r, n]) => `${n} ${r}`).join(', ');
-                const requestStr = Object.entries(trade.request).map(([r, n]) => `${n} ${r}`).join(', ');
+        // Render offer cards (player's resources)
+        const offerContainer = document.getElementById('trade-offer-cards');
+        offerContainer.innerHTML = '';
 
-                div.innerHTML = `<span>Give: ${offerStr}</span><span>Get: ${requestStr}</span>`;
-                div.onclick = () => this.executeTrade(this.currentGame.phase.currentPlayerId, trade.offer, trade.request);
+        const resourceAbbrev = { Brick: 'B', Wood: 'W', Ore: 'O', Grain: 'G', Wool: 'S' };
+        const resources = player.resources;
 
-                container.appendChild(div);
-            });
-        }
+        Object.entries(resources).forEach(([resource, count]) => {
+            for (let i = 0; i < count; i++) {
+                const card = document.createElement('div');
+                card.className = `discard-card resource-${resource}`;
+                card.textContent = resourceAbbrev[resource] || resource.substring(0, 1);
+                card.dataset.resource = resource;
+                card.onclick = () => this.toggleTradeOfferCard(card, resource);
+                offerContainer.appendChild(card);
+            }
+        });
 
+        // Render request options (all 5 resource types)
+        const requestContainer = document.getElementById('trade-request-options');
+        requestContainer.innerHTML = '';
+
+        ['Brick', 'Wood', 'Ore', 'Grain', 'Wool'].forEach(resource => {
+            const option = document.createElement('div');
+            option.className = `resource-option resource-${resource}`;
+            option.textContent = resource;
+            option.dataset.resource = resource;
+            option.onclick = () => this.selectTradeRequest(option, resource);
+            requestContainer.appendChild(option);
+        });
+
+        this.updateTradeSummary();
         document.getElementById('trade-modal').classList.remove('hidden');
     },
 
-    async executeTrade(playerId, offer, request) {
+    calculateTradeRates(playerId) {
+        // Default 4:1 for all resources
+        const rates = {
+            Brick: 4, Wood: 4, Ore: 4, Grain: 4, Wool: 4
+        };
+
+        // Check ports for better rates
+        if (this.currentGame.ports) {
+            this.currentGame.ports.forEach(port => {
+                // Check if player has a building on either port vertex
+                const hasPort = port.vertices.some(vertexId => {
+                    const vertex = this.currentGame.vertices.find(v => v.id === vertexId);
+                    return vertex && vertex.playerId === playerId &&
+                           (vertex.building === 'Settlement' || vertex.building === 'City');
+                });
+
+                if (hasPort) {
+                    if (port.type === 'ThreeToOne') {
+                        // 3:1 for all resources
+                        Object.keys(rates).forEach(r => {
+                            if (rates[r] > 3) rates[r] = 3;
+                        });
+                    } else {
+                        // 2:1 for specific resource
+                        if (rates[port.type] > 2) rates[port.type] = 2;
+                    }
+                }
+            });
+        }
+
+        return rates;
+    },
+
+    toggleTradeOfferCard(card, resource) {
+        if (card.classList.contains('selected')) {
+            card.classList.remove('selected');
+            const idx = this.selectedTradeOffer.indexOf(resource);
+            if (idx > -1) this.selectedTradeOffer.splice(idx, 1);
+        } else {
+            card.classList.add('selected');
+            this.selectedTradeOffer.push(resource);
+        }
+        this.updateTradeSummary();
+    },
+
+    selectTradeRequest(option, resource) {
+        // Deselect previous
+        document.querySelectorAll('#trade-request-options .resource-option').forEach(el => {
+            el.classList.remove('selected');
+        });
+        option.classList.add('selected');
+        this.selectedTradeRequest = resource;
+        this.updateTradeSummary();
+    },
+
+    updateTradeSummary() {
+        const summary = document.getElementById('trade-summary');
+        const confirmBtn = document.getElementById('btn-confirm-trade');
+
+        if (this.selectedTradeOffer.length === 0) {
+            summary.textContent = 'Select resources to offer';
+            confirmBtn.disabled = true;
+            return;
+        }
+
+        // Count resources by type
+        const offerCounts = {};
+        this.selectedTradeOffer.forEach(r => {
+            offerCounts[r] = (offerCounts[r] || 0) + 1;
+        });
+
+        // Check if we have a valid trade (all same type and meets rate)
+        const resourceTypes = Object.keys(offerCounts);
+        if (resourceTypes.length !== 1) {
+            summary.textContent = 'Select cards of the same type';
+            confirmBtn.disabled = true;
+            return;
+        }
+
+        const offerResource = resourceTypes[0];
+        const offerCount = offerCounts[offerResource];
+        const requiredRate = this.tradeRates[offerResource];
+
+        if (offerCount < requiredRate) {
+            summary.textContent = `Need ${requiredRate} ${offerResource} (have ${offerCount} selected)`;
+            confirmBtn.disabled = true;
+            return;
+        }
+
+        if (offerCount % requiredRate !== 0) {
+            summary.textContent = `Select a multiple of ${requiredRate} cards`;
+            confirmBtn.disabled = true;
+            return;
+        }
+
+        const receiveCount = offerCount / requiredRate;
+
+        if (!this.selectedTradeRequest) {
+            summary.textContent = `Trading ${offerCount} ${offerResource} - select what you want`;
+            confirmBtn.disabled = true;
+            return;
+        }
+
+        if (this.selectedTradeRequest === offerResource) {
+            summary.textContent = `Cannot trade ${offerResource} for ${offerResource}`;
+            confirmBtn.disabled = true;
+            return;
+        }
+
+        summary.textContent = `Trade ${offerCount} ${offerResource} for ${receiveCount} ${this.selectedTradeRequest}`;
+        confirmBtn.disabled = false;
+    },
+
+    async confirmTrade() {
+        const playerId = this.currentGame.phase.currentPlayerId;
+
+        // Build offer object
+        const offer = {};
+        this.selectedTradeOffer.forEach(r => {
+            offer[r] = (offer[r] || 0) + 1;
+        });
+
+        // Build request object
+        const offerResource = Object.keys(offer)[0];
+        const offerCount = offer[offerResource];
+        const requiredRate = this.tradeRates[offerResource];
+        const receiveCount = offerCount / requiredRate;
+
+        const request = { [this.selectedTradeRequest]: receiveCount };
+
         this.closeModal('trade-modal');
         this.log('Trading with bank...');
 
@@ -722,23 +873,66 @@ const App = {
         resources.forEach(resource => {
             const div = document.createElement('div');
             div.className = `resource-option resource-${resource}`;
-            div.textContent = resource;
-            div.onclick = () => this.toggleResourceOption(div, resource);
+            div.dataset.resource = resource;
+
+            // For maxSelect > 1, show count and +/- buttons
+            if (maxSelect > 1) {
+                div.innerHTML = `
+                    <span class="resource-name">${resource}</span>
+                    <span class="resource-count" data-resource="${resource}">0</span>
+                `;
+                div.onclick = () => this.incrementResourceOption(resource);
+            } else {
+                div.textContent = resource;
+                div.onclick = () => this.toggleResourceOption(div, resource);
+            }
             container.appendChild(div);
         });
 
-        document.getElementById('btn-confirm-resource').disabled = true;
+        this.updateResourceSelectionUI();
     },
 
     toggleResourceOption(div, resource) {
-        if (div.classList.contains('selected')) {
-            div.classList.remove('selected');
+        // For single-select (Monopoly)
+        document.querySelectorAll('#resource-selection .resource-option').forEach(el => {
+            el.classList.remove('selected');
+        });
+        div.classList.add('selected');
+        this.selectedResources = [resource];
+
+        document.getElementById('btn-confirm-resource').disabled = false;
+    },
+
+    incrementResourceOption(resource) {
+        // Count how many of this resource are already selected
+        const currentCount = this.selectedResources.filter(r => r === resource).length;
+        const totalSelected = this.selectedResources.length;
+
+        if (totalSelected < this.maxResourceSelect) {
+            // Add one more of this resource
+            this.selectedResources.push(resource);
+        } else if (currentCount > 0) {
+            // Already at max, remove one of this resource
             const idx = this.selectedResources.indexOf(resource);
             if (idx > -1) this.selectedResources.splice(idx, 1);
-        } else if (this.selectedResources.length < this.maxResourceSelect) {
-            div.classList.add('selected');
-            this.selectedResources.push(resource);
         }
+
+        this.updateResourceSelectionUI();
+    },
+
+    updateResourceSelectionUI() {
+        const resources = ['Brick', 'Wood', 'Ore', 'Grain', 'Wool'];
+        resources.forEach(resource => {
+            const count = this.selectedResources.filter(r => r === resource).length;
+            const countEl = document.querySelector(`#resource-selection .resource-count[data-resource="${resource}"]`);
+            if (countEl) {
+                countEl.textContent = count;
+            }
+            const optionEl = document.querySelector(`#resource-selection .resource-option[data-resource="${resource}"]`);
+            if (optionEl) {
+                optionEl.classList.toggle('selected', count > 0);
+            }
+        });
 
         document.getElementById('btn-confirm-resource').disabled =
             this.selectedResources.length !== this.maxResourceSelect;
