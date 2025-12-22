@@ -426,8 +426,8 @@ const App = {
                 </div>
             `;
 
-            // Show resources for human players or all in dev mode
-            if (!player.isBot && player.resources) {
+            // Show resources only for the player selected in "Playing as" dropdown
+            if (player.id === this.playingAsPlayerId && player.resources) {
                 const res = player.resources;
                 html += `<div class="player-resources">
                     B:${res.Brick} W:${res.Wood} O:${res.Ore} G:${res.Grain} S:${res.Wool}
