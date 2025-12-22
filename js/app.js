@@ -60,7 +60,7 @@ const App = {
 
         // Game menu modal
         document.getElementById('btn-game-menu').addEventListener('click', () => this.openGameMenu());
-        document.getElementById('btn-close-game-menu').addEventListener('click', () => this.closeModal('game-menu-modal'));
+        document.getElementById('btn-close-game-menu').addEventListener('click', () => this.closeGameMenu());
         document.getElementById('menu-btn-new-game').addEventListener('click', () => this.createNewGame());
         document.getElementById('menu-btn-load-game').addEventListener('click', () => this.loadGameById());
         document.getElementById('menu-btn-add-player').addEventListener('click', () => this.addPlayer());
@@ -177,6 +177,15 @@ const App = {
         // Update start game button visibility
         const canStart = isSetup && this.currentGame?.players?.length >= 2;
         document.getElementById('menu-btn-start-game').classList.toggle('hidden', !canStart);
+    },
+
+    closeGameMenu() {
+        this.closeModal('game-menu-modal');
+        // Refresh UI when closing the menu
+        if (this.currentGame) {
+            this.displayGame();
+            this.updateUI();
+        }
     },
 
     populateMenuPlayerDropdown() {
