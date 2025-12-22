@@ -158,9 +158,10 @@ const Board = {
         if (!pos) return;
 
         // Robber shape (simple pawn/figure)
+        // Offset to bottom-right of tile center to avoid number token
         const robber = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        const x = pos.x;
-        const y = pos.y - 10; // Offset up slightly
+        const x = pos.x + 25;
+        const y = pos.y + 20;
 
         // Simple robber shape
         robber.setAttribute('d', `

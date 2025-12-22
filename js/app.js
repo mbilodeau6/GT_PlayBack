@@ -407,7 +407,7 @@ const App = {
                     break;
 
                 case 'TradeWithBank':
-                    btn.textContent = `Bank Trade (${action.trades?.length || 0} options)`;
+                    btn.textContent = 'Bank Trade';
                     btn.onclick = () => this.showTradeModal(action);
                     break;
 
