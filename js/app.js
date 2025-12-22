@@ -18,6 +18,11 @@ const App = {
     maxZoom: 2.5,
     zoomStep: 0.25,
 
+    // Auto-refresh
+    autoRefreshInterval: null,
+    autoRefreshDelay: 3000, // 3 seconds
+    autoRefreshEnabled: false, // Controlled via Settings toggle
+
     init() {
         // Initialize board
         const svgElement = document.getElementById('board');
@@ -31,6 +36,9 @@ const App = {
         this.bindEventHandlers();
         this.loadSavedGameId();
         this.updateSettingsUI();
+
+        // Load auto-refresh setting from session (defaults to false)
+        this.autoRefreshEnabled = this.loadAutoRefreshSetting();
 
         this.log('Application initialized');
     },
@@ -96,6 +104,7 @@ const App = {
     openSettings() {
         document.getElementById('api-url-input').value = API.baseUrl;
         document.getElementById('api-key-input').value = API.apiKey;
+        document.getElementById('auto-refresh-toggle').checked = this.autoRefreshEnabled;
         document.getElementById('settings-modal').classList.remove('hidden');
     },
 
@@ -103,8 +112,33 @@ const App = {
         const url = document.getElementById('api-url-input').value.trim();
         const key = document.getElementById('api-key-input').value.trim();
         API.configure(url, key);
+
+        // Handle auto-refresh toggle
+        const autoRefreshEnabled = document.getElementById('auto-refresh-toggle').checked;
+        this.setAutoRefreshEnabled(autoRefreshEnabled);
+
         this.closeSettings();
         this.log('Settings saved', 'success');
+    },
+
+    setAutoRefreshEnabled(enabled) {
+        this.autoRefreshEnabled = enabled;
+        sessionStorage.setItem('catan_auto_refresh', enabled ? 'true' : 'false');
+
+        if (enabled && this.currentGameId) {
+            this.startAutoRefresh();
+            this.log('Auto-refresh enabled');
+        } else {
+            this.stopAutoRefresh();
+            if (!enabled) {
+                this.log('Auto-refresh disabled');
+            }
+        }
+    },
+
+    loadAutoRefreshSetting() {
+        const saved = sessionStorage.getItem('catan_auto_refresh');
+        return saved === 'true';
     },
 
     closeSettings() {
@@ -239,6 +273,50 @@ const App = {
         return this.playingAsPlayerId === this.currentGame.phase.currentPlayerId;
     },
 
+    // ==================== AUTO-REFRESH ====================
+
+    startAutoRefresh() {
+        this.stopAutoRefresh(); // Clear any existing interval
+        if (this.currentGameId) {
+            this.autoRefreshInterval = setInterval(() => {
+                this.autoRefresh();
+            }, this.autoRefreshDelay);
+        }
+    },
+
+    stopAutoRefresh() {
+        if (this.autoRefreshInterval) {
+            clearInterval(this.autoRefreshInterval);
+            this.autoRefreshInterval = null;
+        }
+    },
+
+    async autoRefresh() {
+        if (!this.currentGameId) return;
+
+        // Stop auto-refresh if disabled or game is over
+        if (!this.autoRefreshEnabled || this.currentGame?.phase?.phaseState === 'GameOver') {
+            this.stopAutoRefresh();
+            return;
+        }
+
+        // Don't refresh if user is in the middle of a selection or modal
+        if (this.selectionMode) return;
+        if (!document.getElementById('trade-modal').classList.contains('hidden')) return;
+        if (!document.getElementById('discard-modal').classList.contains('hidden')) return;
+        if (!document.getElementById('resource-modal').classList.contains('hidden')) return;
+
+        try {
+            const response = await API.getGame(this.currentGameId);
+            if (response.success) {
+                this.handleGameResponse(response);
+            }
+        } catch (e) {
+            // Silently ignore auto-refresh errors
+            console.log('Auto-refresh failed:', e);
+        }
+    },
+
     handleGameResponse(response) {
         this.currentGame = response.gameState;
         this.currentGameId = response.gameState.id;
@@ -246,6 +324,11 @@ const App = {
 
         this.displayGame();
         this.updateUI();
+
+        // Start auto-refresh if enabled and not already running
+        if (this.autoRefreshEnabled && !this.autoRefreshInterval) {
+            this.startAutoRefresh();
+        }
     },
 
     displayGame() {
