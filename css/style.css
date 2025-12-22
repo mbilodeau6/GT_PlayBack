@@ -611,7 +611,18 @@ select:focus {
 .settlement {
     stroke: #333;
     stroke-width: 2;
-    pointer-events: none;
+    cursor: pointer;
+}
+
+.settlement.selectable {
+    stroke: #e94560;
+    stroke-width: 3;
+    stroke-dasharray: 5, 5;
+}
+
+.settlement.selectable:hover {
+    stroke: #ff6b6b;
+    stroke-width: 4;
 }
 
 .settlement.player-Red { fill: #e74c3c; }

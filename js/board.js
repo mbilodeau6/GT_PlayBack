@@ -323,36 +323,81 @@ const Board = {
     getVertexPosition(vertex) {
         if (vertex.tileIds.length >= 2) {
             // Vertex at intersection of multiple tiles
-            // Average the positions and find the closest corner
-            let sumX = 0, sumY = 0;
-            vertex.tileIds.forEach(tileId => {
-                const pos = this.tilePositions.get(tileId);
-                if (pos) {
-                    sumX += pos.x;
-                    sumY += pos.y;
-                }
-            });
-            const avgX = sumX / vertex.tileIds.length;
-            const avgY = sumY / vertex.tileIds.length;
-
-            // Find the actual corner position using first tile
+            // Find corners shared by ALL tiles in the vertex
             const firstTilePos = this.tilePositions.get(vertex.tileIds[0]);
             if (!firstTilePos) return null;
 
-            const corners = HexMath.getHexCorners(firstTilePos.x, firstTilePos.y);
+            const firstCorners = HexMath.getHexCorners(firstTilePos.x, firstTilePos.y);
+            const tolerance = 1; // pixels
 
-            // Find corner closest to average position
-            let closest = corners[0];
-            let minDist = Infinity;
-            corners.forEach(c => {
-                const d = Math.hypot(c.x - avgX, c.y - avgY);
-                if (d < minDist) {
-                    minDist = d;
-                    closest = c;
+            // Collect all corners shared by all tiles in this vertex
+            const sharedCorners = [];
+
+            for (const corner of firstCorners) {
+                let sharedByAll = true;
+
+                for (let i = 1; i < vertex.tileIds.length; i++) {
+                    const otherTilePos = this.tilePositions.get(vertex.tileIds[i]);
+                    if (!otherTilePos) {
+                        sharedByAll = false;
+                        break;
+                    }
+
+                    const otherCorners = HexMath.getHexCorners(otherTilePos.x, otherTilePos.y);
+                    const hasMatch = otherCorners.some(oc =>
+                        Math.abs(oc.x - corner.x) < tolerance &&
+                        Math.abs(oc.y - corner.y) < tolerance
+                    );
+
+                    if (!hasMatch) {
+                        sharedByAll = false;
+                        break;
+                    }
                 }
-            });
 
-            return closest;
+                if (sharedByAll) {
+                    sharedCorners.push(corner);
+                }
+            }
+
+            // For 3-tile vertices, there's exactly 1 shared corner
+            if (vertex.tileIds.length === 3 || sharedCorners.length === 1) {
+                return sharedCorners[0];
+            }
+
+            // For 2-tile vertices, there are 2 shared corners (endpoints of shared edge)
+            // Pick the one NOT shared by any other tile on the board
+            if (vertex.tileIds.length === 2 && sharedCorners.length === 2) {
+                for (const corner of sharedCorners) {
+                    let isExclusive = true;
+
+                    // Check all other tiles on the board
+                    for (const tile of this.gameState.tiles) {
+                        if (vertex.tileIds.includes(tile.id)) continue;
+
+                        const tilePos = this.tilePositions.get(tile.id);
+                        if (!tilePos) continue;
+
+                        const tileCorners = HexMath.getHexCorners(tilePos.x, tilePos.y);
+                        const touchesCorner = tileCorners.some(tc =>
+                            Math.abs(tc.x - corner.x) < tolerance &&
+                            Math.abs(tc.y - corner.y) < tolerance
+                        );
+
+                        if (touchesCorner) {
+                            isExclusive = false;
+                            break;
+                        }
+                    }
+
+                    if (isExclusive) {
+                        return corner;
+                    }
+                }
+            }
+
+            // Fallback: return first shared corner
+            return sharedCorners[0] || null;
         } else if (vertex.tileIds.length === 1 && vertex.direction) {
             // Border vertex
             const pos = this.tilePositions.get(vertex.tileIds[0]);
@@ -390,7 +435,9 @@ const Board = {
         settlement.setAttribute('data-vertex-id', vertex.id);
 
         // Allow clicking on settlements for upgrade
-        settlement.addEventListener('click', () => {
+        settlement.addEventListener('click', (e) => {
+            console.log('Settlement clicked:', vertex.id, 'onVertexClick:', !!this.onVertexClick);
+            e.stopPropagation();
             if (this.onVertexClick) {
                 this.onVertexClick(vertex.id);
             }
@@ -497,18 +544,22 @@ const Board = {
 
         if (mode === 'vertex') {
             ids.forEach(id => {
-                const el = this.svg.querySelector(`[data-vertex-id="${id}"]`);
-                if (el) el.classList.add('selectable');
+                // Use querySelectorAll to find all elements (placeholders and buildings)
+                this.svg.querySelectorAll(`[data-vertex-id="${id}"]`).forEach(el => {
+                    el.classList.add('selectable');
+                });
             });
         } else if (mode === 'edge') {
             ids.forEach(id => {
-                const el = this.svg.querySelector(`[data-edge-id="${id}"]`);
-                if (el) el.classList.add('selectable');
+                this.svg.querySelectorAll(`[data-edge-id="${id}"]`).forEach(el => {
+                    el.classList.add('selectable');
+                });
             });
         } else if (mode === 'tile') {
             ids.forEach(id => {
-                const el = this.svg.querySelector(`[data-tile-id="${id}"]`);
-                if (el) el.classList.add('selectable');
+                this.svg.querySelectorAll(`[data-tile-id="${id}"]`).forEach(el => {
+                    el.classList.add('selectable');
+                });
             });
         }
     },

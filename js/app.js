@@ -363,27 +363,27 @@ const App = {
                 case 'RollDice':
                     btn.textContent = 'Roll Dice';
                     btn.classList.add('highlight');
-                    btn.onclick = () => this.doRollDice(action.playerId);
+                    btn.onclick = () => this.doRollDice(this.currentGame.phase.currentPlayerId);
                     break;
 
                 case 'PlaceSettlement':
                     btn.textContent = `Place Settlement (${action.vertexIds?.length || 0} spots)`;
-                    btn.onclick = () => this.startSelection('vertex', action.vertexIds, action.playerId, 'PlaceSettlement');
+                    btn.onclick = () => this.startSelection('vertex', action.vertexIds, this.currentGame.phase.currentPlayerId, 'PlaceSettlement');
                     break;
 
                 case 'PlaceRoad':
                     btn.textContent = `Place Road (${action.edgeIds?.length || 0} spots)`;
-                    btn.onclick = () => this.startSelection('edge', action.edgeIds, action.playerId, 'PlaceRoad');
+                    btn.onclick = () => this.startSelection('edge', action.edgeIds, this.currentGame.phase.currentPlayerId, 'PlaceRoad');
                     break;
 
                 case 'UpgradeSettlement':
                     btn.textContent = `Upgrade to City (${action.vertexIds?.length || 0})`;
-                    btn.onclick = () => this.startSelection('vertex', action.vertexIds, action.playerId, 'UpgradeSettlement');
+                    btn.onclick = () => this.startSelection('vertex', action.vertexIds, this.currentGame.phase.currentPlayerId, 'UpgradeSettlement');
                     break;
 
                 case 'PlaceRobber':
                     btn.textContent = `Place Robber (${action.tileIds?.length || 0} tiles)`;
-                    btn.onclick = () => this.startSelection('tile', action.tileIds, action.playerId, 'PlaceRobber');
+                    btn.onclick = () => this.startSelection('tile', action.tileIds, this.currentGame.phase.currentPlayerId, 'PlaceRobber');
                     break;
 
                 case 'StealResource':
@@ -399,7 +399,7 @@ const App = {
 
                 case 'BuyDevelopmentCard':
                     btn.textContent = 'Buy Dev Card';
-                    btn.onclick = () => this.doBuyDevCard(action.playerId);
+                    btn.onclick = () => this.doBuyDevCard(this.currentGame.phase.currentPlayerId);
                     break;
 
                 case 'TradeWithBank':
@@ -409,28 +409,28 @@ const App = {
 
                 case 'PlayKnight':
                     btn.textContent = 'Play Knight';
-                    btn.onclick = () => this.startSelection('tile', action.tileIds, action.playerId, 'PlayKnight');
+                    btn.onclick = () => this.startSelection('tile', action.tileIds, this.currentGame.phase.currentPlayerId, 'PlayKnight');
                     break;
 
                 case 'PlayRoadBuilding':
                     btn.textContent = 'Play Road Building';
-                    btn.onclick = () => this.doPlayRoadBuilding(action.playerId);
+                    btn.onclick = () => this.doPlayRoadBuilding(this.currentGame.phase.currentPlayerId);
                     break;
 
                 case 'PlayYearOfPlenty':
                     btn.textContent = 'Play Year of Plenty';
-                    btn.onclick = () => this.showYearOfPlentyModal(action.playerId);
+                    btn.onclick = () => this.showYearOfPlentyModal(this.currentGame.phase.currentPlayerId);
                     break;
 
                 case 'PlayMonopoly':
                     btn.textContent = 'Play Monopoly';
-                    btn.onclick = () => this.showMonopolyModal(action.playerId);
+                    btn.onclick = () => this.showMonopolyModal(this.currentGame.phase.currentPlayerId);
                     break;
 
                 case 'EndTurn':
                     btn.textContent = 'End Turn';
                     btn.classList.add('secondary');
-                    btn.onclick = () => this.doEndTurn(action.playerId);
+                    btn.onclick = () => this.doEndTurn(this.currentGame.phase.currentPlayerId);
                     break;
 
                 default:
@@ -478,6 +478,7 @@ const App = {
     },
 
     async handleBoardClick(type, id) {
+        console.log('handleBoardClick:', type, id, 'selectionMode:', this.selectionMode, 'selectableIds:', this.selectableIds);
         if (this.selectionMode !== type) return;
         if (!this.selectableIds.includes(id)) return;
 
@@ -583,7 +584,7 @@ const App = {
                 const requestStr = Object.entries(trade.request).map(([r, n]) => `${n} ${r}`).join(', ');
 
                 div.innerHTML = `<span>Give: ${offerStr}</span><span>Get: ${requestStr}</span>`;
-                div.onclick = () => this.executeTrade(action.playerId, trade.offer, trade.request);
+                div.onclick = () => this.executeTrade(this.currentGame.phase.currentPlayerId, trade.offer, trade.request);
 
                 container.appendChild(div);
             });
@@ -607,7 +608,8 @@ const App = {
     },
 
     showDiscardModal(action) {
-        const player = this.currentGame.players.find(p => p.id === action.playerId);
+        const playerId = this.currentGame.phase.currentPlayerId;
+        const player = this.currentGame.players.find(p => p.id === playerId);
         if (!player) return;
 
         document.getElementById('discard-info').textContent =
@@ -617,7 +619,7 @@ const App = {
         container.innerHTML = '';
 
         this.discardCount = action.count;
-        this.discardPlayerId = action.playerId;
+        this.discardPlayerId = playerId;
         this.selectedDiscards = [];
 
         // Create cards for each resource the player has
@@ -670,13 +672,14 @@ const App = {
     },
 
     showStealOptions(action) {
+        const playerId = this.currentGame.phase.currentPlayerId;
         // For now, if there's only one target, steal from them directly
         if (action.targetPlayerIds.length === 1) {
-            this.doSteal(action.playerId, action.targetPlayerIds[0]);
+            this.doSteal(playerId, action.targetPlayerIds[0]);
         } else {
             // TODO: Show modal to pick target
             this.log('Multiple steal targets - picking first one');
-            this.doSteal(action.playerId, action.targetPlayerIds[0]);
+            this.doSteal(playerId, action.targetPlayerIds[0]);
         }
     },
 
