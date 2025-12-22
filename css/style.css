@@ -236,9 +236,14 @@ button.small-btn {
 }
 
 .icon-btn {
-    width: auto;
-    padding: 0.5rem 1rem;
+    width: 36px;
+    height: 36px;
+    padding: 0;
     margin: 0;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Form Elements */
