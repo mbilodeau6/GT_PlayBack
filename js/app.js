@@ -58,20 +58,20 @@ const App = {
         document.getElementById('btn-save-settings').addEventListener('click', () => this.saveSettings());
         document.getElementById('btn-cancel-settings').addEventListener('click', () => this.closeSettings());
 
-        // Game setup
-        document.getElementById('btn-new-game').addEventListener('click', () => this.createNewGame());
-        document.getElementById('btn-load-game').addEventListener('click', () => this.loadGameById());
-        document.getElementById('btn-refresh').addEventListener('click', () => this.refreshGameState());
+        // Game menu modal
+        document.getElementById('btn-game-menu').addEventListener('click', () => this.openGameMenu());
+        document.getElementById('btn-close-game-menu').addEventListener('click', () => this.closeModal('game-menu-modal'));
+        document.getElementById('menu-btn-new-game').addEventListener('click', () => this.createNewGame());
+        document.getElementById('menu-btn-load-game').addEventListener('click', () => this.loadGameById());
+        document.getElementById('menu-btn-add-player').addEventListener('click', () => this.addPlayer());
+        document.getElementById('menu-btn-start-game').addEventListener('click', () => this.startGame());
+        document.getElementById('menu-playing-as-select').addEventListener('change', (e) => this.onPlayingAsChanged(e.target.value));
 
-        // Players
-        document.getElementById('btn-add-player').addEventListener('click', () => this.addPlayer());
-        document.getElementById('btn-start-game').addEventListener('click', () => this.startGame());
+        // Refresh button
+        document.getElementById('btn-refresh').addEventListener('click', () => this.refreshGameState());
 
         // Selection cancel
         document.getElementById('btn-cancel-selection').addEventListener('click', () => this.cancelSelection());
-
-        // Player selection dropdown
-        document.getElementById('playing-as-select').addEventListener('change', (e) => this.onPlayingAsChanged(e.target.value));
 
         // Modal cancels
         document.getElementById('btn-cancel-trade').addEventListener('click', () => this.closeModal('trade-modal'));
@@ -154,16 +154,63 @@ const App = {
         document.getElementById('api-url-input').value = API.baseUrl;
     },
 
+    // ==================== GAME MENU ====================
+
+    openGameMenu() {
+        // Update the playing-as dropdown in the menu
+        this.populateMenuPlayerDropdown();
+        // Show/hide player management section based on game phase
+        this.updateGameMenuUI();
+        document.getElementById('game-menu-modal').classList.remove('hidden');
+    },
+
+    updateGameMenuUI() {
+        const isSetup = this.currentGame?.phase?.phaseState === 'SettingUpBoard';
+        const hasGame = !!this.currentGame;
+
+        // Show player management only during setup
+        document.getElementById('menu-player-management').classList.toggle('hidden', !isSetup);
+
+        // Show/hide playing as based on whether game has started
+        document.getElementById('menu-playing-as-container').classList.toggle('hidden', !hasGame || isSetup);
+
+        // Update start game button visibility
+        const canStart = isSetup && this.currentGame?.players?.length >= 2;
+        document.getElementById('menu-btn-start-game').classList.toggle('hidden', !canStart);
+    },
+
+    populateMenuPlayerDropdown() {
+        const select = document.getElementById('menu-playing-as-select');
+        select.innerHTML = '';
+
+        if (!this.currentGame?.players) return;
+
+        this.currentGame.players.forEach(player => {
+            const option = document.createElement('option');
+            option.value = player.id;
+            option.textContent = `${player.name}${player.isBot ? ' (Bot)' : ''}`;
+            option.style.color = this.getPlayerCSSColor(player.color);
+            select.appendChild(option);
+        });
+
+        // Set the selected player
+        if (this.playingAsPlayerId) {
+            select.value = this.playingAsPlayerId;
+        }
+    },
+
     // ==================== GAME MANAGEMENT ====================
 
     async createNewGame() {
-        const gameType = document.getElementById('game-type-select').value;
+        const gameType = document.getElementById('menu-game-type-select').value;
         this.log(`Creating new ${gameType} game...`);
 
         const response = await API.createGame(gameType);
         if (response.success) {
             this.handleGameResponse(response);
             this.saveGameId(response.gameState.id);
+            this.populateMenuPlayerDropdown();
+            this.updateGameMenuUI();
             this.log(`Game created: ${response.gameState.id}`, 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
@@ -171,7 +218,7 @@ const App = {
     },
 
     async loadGameById() {
-        const gameId = document.getElementById('game-id-input').value.trim();
+        const gameId = document.getElementById('menu-game-id-input').value.trim();
         if (!gameId) {
             this.log('Please enter a game ID', 'error');
             return;
@@ -182,6 +229,8 @@ const App = {
         if (response.success) {
             this.handleGameResponse(response);
             this.saveGameId(gameId);
+            this.populateMenuPlayerDropdown();
+            this.updateGameMenuUI();
             this.log('Game loaded', 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
@@ -207,13 +256,13 @@ const App = {
     saveGameId(gameId) {
         this.currentGameId = gameId;
         localStorage.setItem('catan_current_game', gameId);
-        document.getElementById('game-id-input').value = gameId;
+        document.getElementById('menu-game-id-input').value = gameId;
     },
 
     loadSavedGameId() {
         const savedGameId = localStorage.getItem('catan_current_game');
         if (savedGameId) {
-            document.getElementById('game-id-input').value = savedGameId;
+            document.getElementById('menu-game-id-input').value = savedGameId;
         }
     },
 
@@ -246,24 +295,8 @@ const App = {
     },
 
     populatePlayerDropdown() {
-        const select = document.getElementById('playing-as-select');
-        select.innerHTML = '';
-
-        if (!this.currentGame?.players) return;
-
-        this.currentGame.players.forEach(player => {
-            const option = document.createElement('option');
-            option.value = player.id;
-            option.textContent = `${player.name}${player.isBot ? ' (Bot)' : ''}`;
-            option.style.color = this.getPlayerCSSColor(player.color);
-            select.appendChild(option);
-        });
-
-        // Set the selected player
+        // Load the saved player selection
         this.playingAsPlayerId = this.loadPlayingAsPlayer();
-        if (this.playingAsPlayerId) {
-            select.value = this.playingAsPlayerId;
-        }
     },
 
     getPlayerName(playerId) {
@@ -313,6 +346,7 @@ const App = {
         if (!document.getElementById('player-trade-modal').classList.contains('hidden')) return;
         if (!document.getElementById('respond-trade-modal').classList.contains('hidden')) return;
         if (!document.getElementById('accept-trade-modal').classList.contains('hidden')) return;
+        if (!document.getElementById('game-menu-modal').classList.contains('hidden')) return;
 
         try {
             const response = await API.getGame(this.currentGameId);
@@ -384,11 +418,8 @@ const App = {
         const phase = game?.phase?.phaseState;
 
         // Show/hide sections based on phase
-        const isSetup = phase === 'SettingUpBoard';
         const isPlaying = phase && phase !== 'SettingUpBoard' && phase !== 'GameOver';
 
-        document.getElementById('add-player-form').classList.toggle('hidden', !isSetup);
-        document.getElementById('btn-start-game').classList.toggle('hidden', !isSetup || game.players.length < 2);
         document.getElementById('actions-section').classList.toggle('hidden', !isPlaying && this.possibleActions.length === 0);
 
         // Update actions
@@ -454,9 +485,9 @@ const App = {
             return;
         }
 
-        const name = document.getElementById('player-name-input').value.trim();
-        const color = document.getElementById('player-color-select').value;
-        const isBot = document.getElementById('player-is-bot').checked;
+        const name = document.getElementById('menu-player-name-input').value.trim();
+        const color = document.getElementById('menu-player-color-select').value;
+        const isBot = document.getElementById('menu-player-is-bot').checked;
 
         if (!name) {
             this.log('Please enter a player name', 'error');
@@ -468,7 +499,9 @@ const App = {
 
         if (response.success) {
             this.handleGameResponse(response);
-            document.getElementById('player-name-input').value = '';
+            document.getElementById('menu-player-name-input').value = '';
+            this.populateMenuPlayerDropdown();
+            this.updateGameMenuUI();
             this.log(`Player ${name} added`, 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
@@ -483,6 +516,8 @@ const App = {
 
         if (response.success) {
             this.handleGameResponse(response);
+            this.populateMenuPlayerDropdown();
+            this.updateGameMenuUI();
             this.log('Player removed', 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
@@ -497,6 +532,7 @@ const App = {
 
         if (response.success) {
             this.handleGameResponse(response);
+            this.closeModal('game-menu-modal');
             this.log('Game started!', 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');

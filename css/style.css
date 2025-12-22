@@ -480,6 +480,25 @@ select:focus {
     border-bottom: 1px solid #0f3460;
 }
 
+.modal-divider {
+    border: none;
+    border-top: 1px solid #0f3460;
+    margin: 1rem 0;
+}
+
+/* Game Menu Modal */
+#menu-playing-as-container {
+    margin-bottom: 0;
+}
+
+#menu-player-management {
+    margin-bottom: 1rem;
+}
+
+#menu-player-management .form-group {
+    margin-bottom: 0.75rem;
+}
+
 /* Trade Modal */
 #trade-offer-section,
 #trade-request-section {
