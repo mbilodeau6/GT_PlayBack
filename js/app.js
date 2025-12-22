@@ -496,9 +496,9 @@ const App = {
                     ${isSetup ? `<button class="remove-btn" data-player-id="${player.id}">Remove</button>` : ''}
                 </div>
                 <div class="player-stats">
-                    VP: ${player.victoryPoints} |
-                    Cards: ${player.resourceCount} |
-                    Dev: ${player.developmentCardCount}
+                    VP: <span class="stat-value">${player.victoryPoints}</span> |
+                    Cards: <span class="stat-value">${player.resourceCount}</span> |
+                    Dev: <span class="stat-value">${player.developmentCardCount}</span>
                 </div>
             `;
 
@@ -506,7 +506,11 @@ const App = {
             if (player.id === this.playingAsPlayerId && player.resources) {
                 const res = player.resources;
                 html += `<div class="player-resources">
-                    B:${res.Brick} W:${res.Wood} O:${res.Ore} G:${res.Grain} S:${res.Wool}
+                    B:<span class="stat-value">${res.Brick}</span>
+                    W:<span class="stat-value">${res.Wood}</span>
+                    O:<span class="stat-value">${res.Ore}</span>
+                    G:<span class="stat-value">${res.Grain}</span>
+                    S:<span class="stat-value">${res.Wool}</span>
                 </div>`;
             }
 
