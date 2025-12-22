@@ -392,9 +392,12 @@ const App = {
                     break;
 
                 case 'DiscardCards':
-                    btn.textContent = `Discard ${action.count} Cards`;
+                    // Calculate discard count: half of resources (rounded down) for players with > 7 cards
+                    const discardPlayer = this.currentGame.players.find(p => p.id === this.currentGame.phase.currentPlayerId);
+                    const discardCount = discardPlayer ? Math.floor(discardPlayer.resourceCount / 2) : 0;
+                    btn.textContent = `Discard ${discardCount} Cards`;
                     btn.classList.add('highlight');
-                    btn.onclick = () => this.showDiscardModal(action);
+                    btn.onclick = () => this.showDiscardModal({ ...action, count: discardCount });
                     break;
 
                 case 'BuyDevelopmentCard':
@@ -623,12 +626,13 @@ const App = {
         this.selectedDiscards = [];
 
         // Create cards for each resource the player has
+        const resourceAbbrev = { Brick: 'B', Wood: 'W', Ore: 'O', Grain: 'G', Wool: 'S' };
         const resources = player.resources;
         Object.entries(resources).forEach(([resource, count]) => {
             for (let i = 0; i < count; i++) {
                 const card = document.createElement('div');
                 card.className = `discard-card resource-${resource}`;
-                card.textContent = resource.substring(0, 1);
+                card.textContent = resourceAbbrev[resource] || resource.substring(0, 1);
                 card.dataset.resource = resource;
                 card.onclick = () => this.toggleDiscardCard(card, resource);
                 container.appendChild(card);
