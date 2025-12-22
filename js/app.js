@@ -483,9 +483,16 @@ const App = {
                 card.classList.add('current');
             }
 
+            // Check for special achievements
+            const hasLongestRoad = this.currentGame.hasLongestRoadPlayerId === player.id;
+            const hasLargestArmy = this.currentGame.hasLargestArmyPlayerId === player.id;
+            const badges = [];
+            if (hasLongestRoad) badges.push('<span class="player-badge road-badge" title="Longest Road">LR</span>');
+            if (hasLargestArmy) badges.push('<span class="player-badge army-badge" title="Largest Army">LA</span>');
+
             let html = `
                 <div class="player-card-header">
-                    <div class="player-name">${player.name} ${player.isBot ? '(Bot)' : ''}</div>
+                    <div class="player-name">${player.name} ${player.isBot ? '(Bot)' : ''} ${badges.join(' ')}</div>
                     ${isSetup ? `<button class="remove-btn" data-player-id="${player.id}">Remove</button>` : ''}
                 </div>
                 <div class="player-stats">

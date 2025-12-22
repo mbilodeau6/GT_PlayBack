@@ -185,6 +185,26 @@ main {
     margin-bottom: 0.25rem;
 }
 
+.player-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: bold;
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+    margin-left: 0.25rem;
+    vertical-align: middle;
+}
+
+.road-badge {
+    background-color: #8b4513;
+    color: #fff;
+}
+
+.army-badge {
+    background-color: #4a0080;
+    color: #fff;
+}
+
 .player-stats {
     font-size: 0.8rem;
     color: #aaa;
