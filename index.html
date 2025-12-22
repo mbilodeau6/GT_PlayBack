@@ -178,6 +178,60 @@
                 </div>
             </div>
         </div>
+
+        <!-- Player Trade Modal -->
+        <div id="player-trade-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>Trade with Players</h2>
+                <div id="player-trade-offer-section">
+                    <h3>You Offer:</h3>
+                    <div id="player-trade-offer"></div>
+                </div>
+                <div id="player-trade-request-section">
+                    <h3>You Request:</h3>
+                    <div id="player-trade-request"></div>
+                </div>
+                <div id="player-trade-summary"></div>
+                <div class="button-group">
+                    <button id="btn-confirm-player-trade" disabled>Propose Trade</button>
+                    <button id="btn-cancel-player-trade">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Respond to Trade Modal -->
+        <div id="respond-trade-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>Trade Offer</h2>
+                <p id="respond-trade-from"></p>
+                <div id="respond-trade-details">
+                    <div class="trade-offer-display">
+                        <h3>They Offer:</h3>
+                        <div id="respond-trade-offer"></div>
+                    </div>
+                    <div class="trade-request-display">
+                        <h3>They Request:</h3>
+                        <div id="respond-trade-request"></div>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button id="btn-accept-trade" class="highlight">Accept</button>
+                    <button id="btn-reject-trade" class="secondary">Reject</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accept Trade Modal (for trade initiator to select which acceptance to take) -->
+        <div id="accept-trade-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>Accept Trade</h2>
+                <p>Select a player to trade with:</p>
+                <div id="accept-trade-players"></div>
+                <div class="button-group">
+                    <button id="btn-cancel-accept-trade" class="secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="js/hexmath.js"></script>

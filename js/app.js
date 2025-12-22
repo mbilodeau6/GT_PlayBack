@@ -80,6 +80,11 @@ const App = {
         document.getElementById('btn-confirm-discard').addEventListener('click', () => this.confirmDiscard());
         document.getElementById('btn-cancel-resource').addEventListener('click', () => this.closeModal('resource-modal'));
         document.getElementById('btn-confirm-resource').addEventListener('click', () => this.confirmResourceSelection());
+        document.getElementById('btn-cancel-player-trade').addEventListener('click', () => this.closeModal('player-trade-modal'));
+        document.getElementById('btn-confirm-player-trade').addEventListener('click', () => this.confirmPlayerTrade());
+        document.getElementById('btn-accept-trade').addEventListener('click', () => this.acceptTradeOffer());
+        document.getElementById('btn-reject-trade').addEventListener('click', () => this.rejectTradeOffer());
+        document.getElementById('btn-cancel-accept-trade').addEventListener('click', () => this.closeModal('accept-trade-modal'));
     },
 
     // ==================== ZOOM ====================
@@ -305,6 +310,9 @@ const App = {
         if (!document.getElementById('trade-modal').classList.contains('hidden')) return;
         if (!document.getElementById('discard-modal').classList.contains('hidden')) return;
         if (!document.getElementById('resource-modal').classList.contains('hidden')) return;
+        if (!document.getElementById('player-trade-modal').classList.contains('hidden')) return;
+        if (!document.getElementById('respond-trade-modal').classList.contains('hidden')) return;
+        if (!document.getElementById('accept-trade-modal').classList.contains('hidden')) return;
 
         try {
             const response = await API.getGame(this.currentGameId);
@@ -505,10 +513,24 @@ const App = {
         // Check if there's a RespondToTrade action (any player can respond)
         const hasRespondToTrade = this.possibleActions?.some(a => a.action === 'RespondToTrade');
 
+        // Check if game is in trading phase and there's an active trade
+        // Non-current players should be able to respond to trades
+        const isInTradingPhase = this.currentGame?.phase?.phaseState === 'RespondToTrade';
+
+        // Find the original trade to determine who initiated it
+        const pendingResponses = this.currentGame?.phase?.pendingTradeResponses || [];
+        const originalTrade = pendingResponses.find(r => r.responseType === 'Original');
+        const tradeInitiatorId = originalTrade?.playerId;
+
+        // Non-initiators can respond to the trade
+        const canRespondToTrade = isInTradingPhase &&
+                                   this.playingAsPlayerId &&
+                                   this.playingAsPlayerId !== tradeInitiatorId;
+
         // Check if it's the selected player's turn (or if RespondToTrade is available)
         const isMyTurn = this.isMyTurn();
 
-        if (!isMyTurn && !hasRespondToTrade) {
+        if (!isMyTurn && !hasRespondToTrade && !canRespondToTrade) {
             // Show waiting message
             const currentPlayerName = this.getPlayerName(this.currentGame?.phase?.currentPlayerId);
             waitingMessage.textContent = `Waiting on ${currentPlayerName}`;
@@ -519,18 +541,18 @@ const App = {
             waitingMessage.classList.add('hidden');
         }
 
-        if (!this.possibleActions || this.possibleActions.length === 0) {
+        if ((!this.possibleActions || this.possibleActions.length === 0) && !canRespondToTrade) {
             container.innerHTML = '<div class="log-entry">No actions available</div>';
             return;
         }
 
         // Filter actions - show RespondToTrade for everyone, other actions only for current player
-        const actionsToShow = this.possibleActions.filter(action => {
+        const actionsToShow = this.possibleActions?.filter(action => {
             if (action.action === 'RespondToTrade') {
                 return true; // Anyone can respond to trade
             }
             return isMyTurn; // Other actions only for current player
-        });
+        }) || [];
 
         // Render action buttons
         actionsToShow.forEach(action => {
@@ -588,6 +610,11 @@ const App = {
                     btn.onclick = () => this.showTradeModal(action);
                     break;
 
+                case 'TradeWithPlayers':
+                    btn.textContent = 'Trade with Players';
+                    btn.onclick = () => this.showPlayerTradeModal();
+                    break;
+
                 case 'PlayKnight':
                     btn.textContent = 'Play Knight';
                     btn.onclick = () => this.startSelection('tile', action.tileIds, this.currentGame.phase.currentPlayerId, 'PlayKnight');
@@ -620,6 +647,20 @@ const App = {
                     btn.onclick = () => this.showRespondToTradeModal(action);
                     break;
 
+                case 'AcceptTrade':
+                    // Find players who have accepted the trade
+                    const acceptedResponses = pendingResponses.filter(r => r.responseType === 'Accept');
+                    btn.textContent = `Accept Trade (${acceptedResponses.length} offers)`;
+                    btn.classList.add('highlight');
+                    btn.onclick = () => this.showAcceptTradeModal(acceptedResponses);
+                    break;
+
+                case 'RejectAllOffers':
+                    btn.textContent = 'Cancel Trade';
+                    btn.classList.add('secondary');
+                    btn.onclick = () => this.doCancelTrade();
+                    break;
+
                 default:
                     btn.textContent = action.action;
                     btn.disabled = true;
@@ -628,8 +669,18 @@ const App = {
             container.appendChild(btn);
         });
 
-        // If no actions to show after filtering
-        if (actionsToShow.length === 0) {
+        // If player can respond to a trade but RespondToTrade wasn't in the actions list,
+        // add a respond button based on the game state
+        if (canRespondToTrade && !hasRespondToTrade) {
+            const btn = document.createElement('button');
+            btn.className = 'action-btn highlight';
+            btn.textContent = 'Respond to Trade';
+            btn.onclick = () => this.showRespondToTradeModal(this.currentGame.activeTrade || {});
+            container.appendChild(btn);
+        }
+
+        // If no actions to show after filtering and no trade response button
+        if (actionsToShow.length === 0 && !canRespondToTrade) {
             container.innerHTML = '<div class="log-entry">No actions available</div>';
         }
     },
@@ -949,6 +1000,166 @@ const App = {
         }
     },
 
+    // ==================== PLAYER TRADE ====================
+
+    showPlayerTradeModal() {
+        const playerId = this.currentGame.phase.currentPlayerId;
+        const player = this.currentGame.players.find(p => p.id === playerId);
+        if (!player) return;
+
+        this.playerTradeOffer = { Brick: 0, Wood: 0, Ore: 0, Grain: 0, Wool: 0 };
+        this.playerTradeRequest = { Brick: 0, Wood: 0, Ore: 0, Grain: 0, Wool: 0 };
+        this.playerTradePlayerId = playerId;
+        this.playerTradeResources = player.resources;
+
+        this.renderPlayerTradeOffer();
+        this.renderPlayerTradeRequest();
+        this.updatePlayerTradeSummary();
+        document.getElementById('player-trade-modal').classList.remove('hidden');
+    },
+
+    renderPlayerTradeOffer() {
+        const container = document.getElementById('player-trade-offer');
+        container.innerHTML = '';
+
+        const resources = ['Brick', 'Wood', 'Ore', 'Grain', 'Wool'];
+        resources.forEach(resource => {
+            const available = this.playerTradeResources[resource] || 0;
+            const selected = this.playerTradeOffer[resource] || 0;
+
+            const div = document.createElement('div');
+            div.className = `trade-resource-row resource-${resource}`;
+            div.innerHTML = `
+                <span class="resource-name">${resource}</span>
+                <span class="resource-available">(${available})</span>
+                <button class="trade-btn minus" data-resource="${resource}" ${selected <= 0 ? 'disabled' : ''}>-</button>
+                <span class="resource-count">${selected}</span>
+                <button class="trade-btn plus" data-resource="${resource}" ${selected >= available ? 'disabled' : ''}>+</button>
+            `;
+
+            div.querySelector('.minus').onclick = () => this.adjustPlayerTradeOffer(resource, -1);
+            div.querySelector('.plus').onclick = () => this.adjustPlayerTradeOffer(resource, 1);
+
+            container.appendChild(div);
+        });
+    },
+
+    renderPlayerTradeRequest() {
+        const container = document.getElementById('player-trade-request');
+        container.innerHTML = '';
+
+        const resources = ['Brick', 'Wood', 'Ore', 'Grain', 'Wool'];
+        resources.forEach(resource => {
+            const selected = this.playerTradeRequest[resource] || 0;
+
+            const div = document.createElement('div');
+            div.className = `trade-resource-row resource-${resource}`;
+            div.innerHTML = `
+                <span class="resource-name">${resource}</span>
+                <button class="trade-btn minus" data-resource="${resource}" ${selected <= 0 ? 'disabled' : ''}>-</button>
+                <span class="resource-count">${selected}</span>
+                <button class="trade-btn plus" data-resource="${resource}">+</button>
+            `;
+
+            div.querySelector('.minus').onclick = () => this.adjustPlayerTradeRequest(resource, -1);
+            div.querySelector('.plus').onclick = () => this.adjustPlayerTradeRequest(resource, 1);
+
+            container.appendChild(div);
+        });
+    },
+
+    adjustPlayerTradeOffer(resource, delta) {
+        const available = this.playerTradeResources[resource] || 0;
+        const current = this.playerTradeOffer[resource] || 0;
+        const newValue = Math.max(0, Math.min(available, current + delta));
+        this.playerTradeOffer[resource] = newValue;
+        this.renderPlayerTradeOffer();
+        this.updatePlayerTradeSummary();
+    },
+
+    adjustPlayerTradeRequest(resource, delta) {
+        const current = this.playerTradeRequest[resource] || 0;
+        const newValue = Math.max(0, current + delta);
+        this.playerTradeRequest[resource] = newValue;
+        this.renderPlayerTradeRequest();
+        this.updatePlayerTradeSummary();
+    },
+
+    updatePlayerTradeSummary() {
+        const summary = document.getElementById('player-trade-summary');
+        const confirmBtn = document.getElementById('btn-confirm-player-trade');
+
+        const offerTotal = Object.values(this.playerTradeOffer).reduce((a, b) => a + b, 0);
+        const requestTotal = Object.values(this.playerTradeRequest).reduce((a, b) => a + b, 0);
+
+        if (offerTotal === 0 || requestTotal === 0) {
+            summary.textContent = 'Select resources to offer and request';
+            confirmBtn.disabled = true;
+            return;
+        }
+
+        // Build summary text
+        const offerText = Object.entries(this.playerTradeOffer)
+            .filter(([_, v]) => v > 0)
+            .map(([r, v]) => `${v} ${r}`)
+            .join(', ');
+
+        const requestText = Object.entries(this.playerTradeRequest)
+            .filter(([_, v]) => v > 0)
+            .map(([r, v]) => `${v} ${r}`)
+            .join(', ');
+
+        summary.textContent = `Offer: ${offerText} | Request: ${requestText}`;
+        confirmBtn.disabled = false;
+    },
+
+    async confirmPlayerTrade() {
+        // Build offer and request objects with non-zero values only
+        const offer = {};
+        const request = {};
+
+        Object.entries(this.playerTradeOffer).forEach(([resource, count]) => {
+            if (count > 0) offer[resource] = count;
+        });
+
+        Object.entries(this.playerTradeRequest).forEach(([resource, count]) => {
+            if (count > 0) request[resource] = count;
+        });
+
+        this.closeModal('player-trade-modal');
+        this.log('Opening trade with other players...');
+
+        const response = await API.openTrade(
+            this.currentGameId,
+            this.playerTradePlayerId,
+            offer,
+            request
+        );
+
+        if (response.success) {
+            this.handleGameResponse(response);
+            this.log('Trade offer sent to other players', 'success');
+        } else {
+            this.log(`Error: ${response.errorMessage}`, 'error');
+        }
+    },
+
+    async doCancelTrade() {
+        this.log('Cancelling trade...');
+
+        const response = await API.rejectAllOffers(
+            this.currentGameId,
+            this.playingAsPlayerId
+        );
+
+        if (response.success) {
+            this.handleGameResponse(response);
+            this.log('Trade cancelled', 'success');
+        } else {
+            this.log(`Error: ${response.errorMessage}`, 'error');
+        }
+    },
+
     showDiscardModal(action) {
         const playerId = this.currentGame.phase.currentPlayerId;
         const player = this.currentGame.players.find(p => p.id === playerId);
@@ -1033,11 +1244,141 @@ const App = {
     },
 
     showRespondToTradeModal(action) {
-        // TODO: Implement trade response UI
-        // For now, just log that this action is available
-        this.log('Trade response available - UI not yet implemented');
-        // The playingAsPlayerId should be used here to respond as the selected player
-        console.log('RespondToTrade action:', action, 'Playing as:', this.playingAsPlayerId);
+        // Find the original trade offer from pendingTradeResponses
+        const pendingResponses = this.currentGame?.phase?.pendingTradeResponses || [];
+        const originalTrade = pendingResponses.find(r => r.responseType === 'Original');
+
+        if (!originalTrade) {
+            this.log('No trade offer found', 'error');
+            return;
+        }
+
+        const initiatorId = originalTrade.playerId;
+        const initiatorName = this.getPlayerName(initiatorId);
+
+        // Store for later use
+        this.pendingTradeResponse = {
+            playerId: this.playingAsPlayerId
+        };
+
+        // Display who is offering the trade
+        document.getElementById('respond-trade-from').textContent = `${initiatorName} offers:`;
+
+        // Display what they're offering (we get, so it's good for us)
+        const offerContainer = document.getElementById('respond-trade-offer');
+        offerContainer.innerHTML = '';
+        const offer = originalTrade.offer || {};
+        Object.entries(offer).forEach(([resource, count]) => {
+            if (count > 0) {
+                const div = document.createElement('div');
+                div.className = `trade-resource-item resource-${resource}`;
+                div.textContent = `${count} ${resource}`;
+                offerContainer.appendChild(div);
+            }
+        });
+        if (Object.keys(offer).length === 0 || Object.values(offer).every(v => v === 0)) {
+            offerContainer.innerHTML = '<div class="trade-resource-item">Nothing</div>';
+        }
+
+        // Display what they're requesting (we give, so it costs us)
+        const requestContainer = document.getElementById('respond-trade-request');
+        requestContainer.innerHTML = '';
+        const request = originalTrade.request || {};
+        Object.entries(request).forEach(([resource, count]) => {
+            if (count > 0) {
+                const div = document.createElement('div');
+                div.className = `trade-resource-item resource-${resource}`;
+                div.textContent = `${count} ${resource}`;
+                requestContainer.appendChild(div);
+            }
+        });
+        if (Object.keys(request).length === 0 || Object.values(request).every(v => v === 0)) {
+            requestContainer.innerHTML = '<div class="trade-resource-item">Nothing</div>';
+        }
+
+        document.getElementById('respond-trade-modal').classList.remove('hidden');
+    },
+
+    async acceptTradeOffer() {
+        this.closeModal('respond-trade-modal');
+        this.log('Accepting trade offer...');
+
+        const response = await API.respondToTrade(
+            this.currentGameId,
+            this.playingAsPlayerId,
+            'Accept'
+        );
+
+        if (response.success) {
+            this.handleGameResponse(response);
+            this.log('Trade accepted', 'success');
+        } else {
+            this.log(`Error: ${response.errorMessage}`, 'error');
+        }
+    },
+
+    async rejectTradeOffer() {
+        this.closeModal('respond-trade-modal');
+        this.log('Rejecting trade offer...');
+
+        const response = await API.respondToTrade(
+            this.currentGameId,
+            this.playingAsPlayerId,
+            'Reject'
+        );
+
+        if (response.success) {
+            this.handleGameResponse(response);
+            this.log('Trade rejected', 'success');
+        } else {
+            this.log(`Error: ${response.errorMessage}`, 'error');
+        }
+    },
+
+    showAcceptTradeModal(acceptedResponses) {
+        // If only one player accepted, accept directly
+        if (acceptedResponses.length === 1) {
+            this.doAcceptTrade(acceptedResponses[0].playerId);
+            return;
+        }
+
+        // Show modal to select which player's acceptance to take
+        const container = document.getElementById('accept-trade-players');
+        container.innerHTML = '';
+
+        acceptedResponses.forEach(response => {
+            const playerName = this.getPlayerName(response.playerId);
+            const player = this.currentGame?.players?.find(p => p.id === response.playerId);
+
+            const btn = document.createElement('button');
+            btn.className = 'action-btn';
+            btn.style.borderLeftColor = this.getPlayerCSSColor(player?.color);
+            btn.textContent = playerName;
+            btn.onclick = () => {
+                this.closeModal('accept-trade-modal');
+                this.doAcceptTrade(response.playerId);
+            };
+            container.appendChild(btn);
+        });
+
+        document.getElementById('accept-trade-modal').classList.remove('hidden');
+    },
+
+    async doAcceptTrade(acceptedPlayerId) {
+        this.log(`Accepting trade from ${this.getPlayerName(acceptedPlayerId)}...`);
+
+        const response = await API.acceptTrade(
+            this.currentGameId,
+            this.playingAsPlayerId,
+            acceptedPlayerId
+        );
+
+        if (response.success) {
+            this.handleGameResponse(response);
+            this.log('Trade completed!', 'success');
+        } else {
+            this.log(`Error: ${response.errorMessage}`, 'error');
+        }
     },
 
     showYearOfPlentyModal(playerId) {

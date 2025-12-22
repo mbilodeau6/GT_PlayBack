@@ -739,3 +739,138 @@ select:focus {
     stroke: #f5f5dc;
     stroke-width: 1;
 }
+
+/* Player Trade Modal */
+#player-trade-offer-section,
+#player-trade-request-section {
+    margin-bottom: 1rem;
+}
+
+#player-trade-offer-section h3,
+#player-trade-request-section h3 {
+    font-size: 0.9rem;
+    color: #aaa;
+    margin-bottom: 0.5rem;
+}
+
+#player-trade-offer,
+#player-trade-request {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.trade-resource-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background-color: #0a1628;
+    border-radius: 6px;
+}
+
+.trade-resource-row .resource-name {
+    flex: 1;
+    font-size: 0.9rem;
+    color: #eee;
+}
+
+.trade-resource-row .resource-available {
+    font-size: 0.8rem;
+    color: #888;
+    min-width: 30px;
+}
+
+.trade-resource-row .resource-count {
+    font-size: 1rem;
+    font-weight: bold;
+    min-width: 24px;
+    text-align: center;
+    color: #e94560;
+}
+
+.trade-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    margin: 0;
+    font-size: 1.2rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.trade-btn.minus {
+    background-color: #0f3460;
+    border: 1px solid #e94560;
+}
+
+.trade-btn.plus {
+    background-color: #e94560;
+}
+
+.trade-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+#player-trade-summary {
+    background-color: #0a1628;
+    padding: 0.75rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    text-align: center;
+    color: #aaa;
+    font-size: 0.85rem;
+}
+
+/* Resource row colors */
+.trade-resource-row.resource-Brick .resource-name { color: #c45c26; }
+.trade-resource-row.resource-Wood .resource-name { color: #2d5a27; }
+.trade-resource-row.resource-Ore .resource-name { color: #8a8a9a; }
+.trade-resource-row.resource-Grain .resource-name { color: #d4a826; }
+.trade-resource-row.resource-Wool .resource-name { color: #8bc34a; }
+
+/* Respond to Trade Modal */
+#respond-trade-from {
+    color: #aaa;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+}
+
+#respond-trade-details {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.trade-offer-display,
+.trade-request-display {
+    flex: 1;
+    background-color: #0a1628;
+    padding: 0.75rem;
+    border-radius: 6px;
+}
+
+.trade-offer-display h3,
+.trade-request-display h3 {
+    font-size: 0.85rem;
+    color: #aaa;
+    margin-bottom: 0.5rem;
+}
+
+.trade-resource-item {
+    padding: 0.4rem 0.6rem;
+    background-color: #0f3460;
+    border-radius: 4px;
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.trade-resource-item.resource-Brick { color: #c45c26; }
+.trade-resource-item.resource-Wood { color: #2d5a27; }
+.trade-resource-item.resource-Ore { color: #8a8a9a; }
+.trade-resource-item.resource-Grain { color: #d4a826; }
+.trade-resource-item.resource-Wool { color: #8bc34a; }
