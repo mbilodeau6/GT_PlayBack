@@ -38,8 +38,12 @@ header h1 {
     color: #aaa;
 }
 
-#current-player {
+#playing-as-display {
     font-weight: bold;
+}
+
+.info-separator {
+    color: #555;
 }
 
 .header-buttons {

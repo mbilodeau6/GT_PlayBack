@@ -271,8 +271,24 @@ const App = {
     onPlayingAsChanged(playerId) {
         this.playingAsPlayerId = playerId;
         this.savePlayingAsPlayer(playerId);
+        this.updateHeaderPlayingAs();
+        this.renderPlayers();
         this.renderActions();
         this.log(`Now playing as ${this.getPlayerName(playerId)}`);
+    },
+
+    updateHeaderPlayingAs() {
+        const playingAsDisplay = document.getElementById('playing-as-display');
+        if (this.playingAsPlayerId && this.currentGame?.players) {
+            const player = this.currentGame.players.find(p => p.id === this.playingAsPlayerId);
+            if (player) {
+                playingAsDisplay.textContent = player.name;
+                playingAsDisplay.style.color = this.getPlayerCSSColor(player.color);
+                return;
+            }
+        }
+        playingAsDisplay.textContent = 'No player selected';
+        playingAsDisplay.style.color = '#aaa';
     },
 
     savePlayingAsPlayer(playerId) {
@@ -377,19 +393,32 @@ const App = {
         const game = this.currentGame;
 
         // Update header
-        document.getElementById('game-id').textContent = `Game: ${game.id.substring(0, 8)}...`;
-        document.getElementById('game-phase').textContent = game.phase?.phaseState || '';
+        this.updateHeaderPlayingAs();
 
-        // Update current player
+        const separators = document.querySelectorAll('.info-separator');
+        const currentPlayerEl = document.getElementById('current-player');
+        const gamePhaseEl = document.getElementById('game-phase');
+
+        // Update current player (same style as phase - no special color)
         if (game.phase?.currentPlayerId) {
             const currentPlayer = game.players.find(p => p.id === game.phase.currentPlayerId);
             if (currentPlayer) {
-                document.getElementById('current-player').textContent = `Current: ${currentPlayer.name}`;
-                document.getElementById('current-player').style.color = this.getPlayerCSSColor(currentPlayer.color);
+                currentPlayerEl.textContent = `Turn: ${currentPlayer.name}`;
             }
         } else {
-            document.getElementById('current-player').textContent = '';
+            currentPlayerEl.textContent = '';
         }
+
+        // Update game phase
+        const phaseState = game.phase?.phaseState || '';
+        gamePhaseEl.textContent = phaseState;
+
+        // Show/hide separators based on content
+        // Order: playing-as | current-player | game-phase
+        const hasCurrentPlayer = !!currentPlayerEl.textContent;
+        const hasPhase = !!phaseState;
+        separators[0].classList.toggle('hidden', !hasCurrentPlayer);
+        separators[1].classList.toggle('hidden', !hasCurrentPlayer || !hasPhase);
 
         // Update dice display
         if (game.dice && (game.dice.die1.value > 0 || game.dice.die2.value > 0)) {
