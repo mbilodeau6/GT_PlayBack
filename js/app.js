@@ -7,6 +7,7 @@ const App = {
     currentGameId: null,
     possibleActions: [],
     selectedPlayerId: null,
+    playingAsPlayerId: null, // The player the user is playing as (persisted)
     selectionMode: null, // 'vertex', 'edge', 'tile'
     selectableIds: [],
     pendingAction: null,
@@ -60,6 +61,9 @@ const App = {
 
         // Selection cancel
         document.getElementById('btn-cancel-selection').addEventListener('click', () => this.cancelSelection());
+
+        // Player selection dropdown
+        document.getElementById('playing-as-select').addEventListener('change', (e) => this.onPlayingAsChanged(e.target.value));
 
         // Modal cancels
         document.getElementById('btn-cancel-trade').addEventListener('click', () => this.closeModal('trade-modal'));
@@ -174,6 +178,67 @@ const App = {
         }
     },
 
+    // ==================== PLAYER SELECTION ====================
+
+    onPlayingAsChanged(playerId) {
+        this.playingAsPlayerId = playerId;
+        this.savePlayingAsPlayer(playerId);
+        this.renderActions();
+        this.log(`Now playing as ${this.getPlayerName(playerId)}`);
+    },
+
+    savePlayingAsPlayer(playerId) {
+        if (this.currentGameId && playerId) {
+            // Use sessionStorage so each browser tab can be a different player
+            sessionStorage.setItem(`catan_playing_as_${this.currentGameId}`, playerId);
+        }
+    },
+
+    loadPlayingAsPlayer() {
+        if (this.currentGameId) {
+            // Use sessionStorage so each browser tab can be a different player
+            const savedPlayerId = sessionStorage.getItem(`catan_playing_as_${this.currentGameId}`);
+            if (savedPlayerId && this.currentGame?.players?.some(p => p.id === savedPlayerId)) {
+                return savedPlayerId;
+            }
+        }
+        // Default to first player if no saved selection
+        return this.currentGame?.players?.[0]?.id || null;
+    },
+
+    populatePlayerDropdown() {
+        const select = document.getElementById('playing-as-select');
+        select.innerHTML = '';
+
+        if (!this.currentGame?.players) return;
+
+        this.currentGame.players.forEach(player => {
+            const option = document.createElement('option');
+            option.value = player.id;
+            option.textContent = `${player.name}${player.isBot ? ' (Bot)' : ''}`;
+            option.style.color = this.getPlayerCSSColor(player.color);
+            select.appendChild(option);
+        });
+
+        // Set the selected player
+        this.playingAsPlayerId = this.loadPlayingAsPlayer();
+        if (this.playingAsPlayerId) {
+            select.value = this.playingAsPlayerId;
+        }
+    },
+
+    getPlayerName(playerId) {
+        const player = this.currentGame?.players?.find(p => p.id === playerId);
+        return player?.name || playerId;
+    },
+
+    isMyTurn() {
+        if (!this.playingAsPlayerId || !this.currentGame?.phase?.currentPlayerId) {
+            return false;
+        }
+        return this.playingAsPlayerId === this.currentGame.phase.currentPlayerId;
+    },
+
     handleGameResponse(response) {
         this.currentGame = response.gameState;
         this.currentGameId = response.gameState.id;
@@ -215,6 +280,9 @@ const App = {
 
         // Render players
         this.renderPlayers();
+
+        // Populate player selection dropdown
+        this.populatePlayerDropdown();
 
         // Enable refresh button
         document.getElementById('btn-refresh').disabled = false;
@@ -348,15 +416,41 @@ const App = {
 
     renderActions() {
         const container = document.getElementById('actions-list');
+        const waitingMessage = document.getElementById('waiting-message');
         container.innerHTML = '';
+
+        // Check if there's a RespondToTrade action (any player can respond)
+        const hasRespondToTrade = this.possibleActions?.some(a => a.action === 'RespondToTrade');
+
+        // Check if it's the selected player's turn (or if RespondToTrade is available)
+        const isMyTurn = this.isMyTurn();
+
+        if (!isMyTurn && !hasRespondToTrade) {
+            // Show waiting message
+            const currentPlayerName = this.getPlayerName(this.currentGame?.phase?.currentPlayerId);
+            waitingMessage.textContent = `Waiting on ${currentPlayerName}`;
+            waitingMessage.classList.remove('hidden');
+            container.innerHTML = '';
+            return;
+        } else {
+            waitingMessage.classList.add('hidden');
+        }
 
         if (!this.possibleActions || this.possibleActions.length === 0) {
             container.innerHTML = '<div class="log-entry">No actions available</div>';
             return;
         }
 
-        // Group actions by type for cleaner display
-        this.possibleActions.forEach(action => {
+        // Filter actions - show RespondToTrade for everyone, other actions only for current player
+        const actionsToShow = this.possibleActions.filter(action => {
+            if (action.action === 'RespondToTrade') {
+                return true; // Anyone can respond to trade
+            }
+            return isMyTurn; // Other actions only for current player
+        });
+
+        // Render action buttons
+        actionsToShow.forEach(action => {
             const btn = document.createElement('button');
             btn.className = 'action-btn';
 
@@ -437,6 +531,12 @@ const App = {
                     btn.onclick = () => this.doEndTurn(this.currentGame.phase.currentPlayerId);
                     break;
 
+                case 'RespondToTrade':
+                    btn.textContent = 'Respond to Trade';
+                    btn.classList.add('highlight');
+                    btn.onclick = () => this.showRespondToTradeModal(action);
+                    break;
+
                 default:
                     btn.textContent = action.action;
                     btn.disabled = true;
@@ -444,6 +544,11 @@ const App = {
 
             container.appendChild(btn);
         });
+
+        // If no actions to show after filtering
+        if (actionsToShow.length === 0) {
+            container.innerHTML = '<div class="log-entry">No actions available</div>';
+        }
     },
 
     // ==================== SELECTION MODE ====================
@@ -842,6 +947,14 @@ const App = {
         this.log(`Stealing from ${targetPlayerId}...`);
         // Note: The steal happens automatically after placing robber in most implementations
         // If your API requires a separate call, add it here
+    },
+
+    showRespondToTradeModal(action) {
+        // TODO: Implement trade response UI
+        // For now, just log that this action is available
+        this.log('Trade response available - UI not yet implemented');
+        // The playingAsPlayerId should be used here to respond as the selected player
+        console.log('RespondToTrade action:', action, 'Playing as:', this.playingAsPlayerId);
     },
 
     showYearOfPlentyModal(playerId) {
