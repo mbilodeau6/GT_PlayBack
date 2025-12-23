@@ -623,20 +623,20 @@ select:focus {
 }
 
 .discard-card {
-    padding: 0.5rem 1rem;
-    background-color: #0f3460;
-    border-radius: 6px;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
     cursor: pointer;
     border: 2px solid transparent;
 }
 
-.discard-card.selected {
-    border-color: #e94560;
-    background-color: #1a4a80;
+.discard-card:hover {
+    border-color: #aaa;
 }
 
-.discard-card:hover {
-    background-color: #1a4a80;
+.discard-card.selected {
+    border-color: #e94560;
+    box-shadow: 0 0 6px rgba(233, 69, 96, 0.6);
 }
 
 /* Resource Selection */
