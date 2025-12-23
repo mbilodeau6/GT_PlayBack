@@ -493,6 +493,9 @@ const App = {
             if (hasLongestRoad) badges.push('<span class="player-badge road-badge" title="Longest Road">LR</span>');
             if (hasLargestArmy) badges.push('<span class="player-badge army-badge" title="Largest Army">LA</span>');
 
+            // Count played knights
+            const knightCount = (player.devCardsPlayed || []).filter(c => c === 'Knight').length;
+
             let html = `
                 <div class="player-card-header">
                     <div class="player-name">${player.name} ${player.isBot ? '(Bot)' : ''} ${badges.join(' ')}</div>
@@ -501,7 +504,8 @@ const App = {
                 <div class="player-stats">
                     VP: <span class="stat-value">${player.victoryPoints}</span> |
                     Cards: <span class="stat-value">${player.resourceCount}</span> |
-                    Dev: <span class="stat-value">${player.developmentCardCount}</span>
+                    Dev: <span class="stat-value">${player.developmentCardCount}</span> |
+                    Knights: <span class="stat-value">${knightCount}</span>
                 </div>
             `;
 
