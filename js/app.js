@@ -86,6 +86,7 @@ const App = {
         document.getElementById('btn-accept-trade').addEventListener('click', () => this.acceptTradeOffer());
         document.getElementById('btn-reject-trade').addEventListener('click', () => this.rejectTradeOffer());
         document.getElementById('btn-cancel-accept-trade').addEventListener('click', () => this.closeModal('accept-trade-modal'));
+        document.getElementById('btn-close-game-over').addEventListener('click', () => this.closeModal('game-over-modal'));
     },
 
     // ==================== ZOOM ====================
@@ -452,6 +453,9 @@ const App = {
 
         // Enable refresh button
         document.getElementById('btn-refresh').disabled = false;
+
+        // Check for game over
+        this.checkAndShowGameOver();
     },
 
     updateUI() {
@@ -1605,6 +1609,65 @@ const App = {
 
     closeModal(modalId) {
         document.getElementById(modalId).classList.add('hidden');
+    },
+
+    // ==================== GAME OVER ====================
+
+    checkAndShowGameOver() {
+        const game = this.currentGame;
+        if (!game || game.phase?.phaseState !== 'GameOver') return;
+
+        // Don't show if already showing
+        const modal = document.getElementById('game-over-modal');
+        if (!modal.classList.contains('hidden')) return;
+
+        // Find the winner (player with most victory points, or who reached victoryPointsToWin)
+        const victoryPointsToWin = game.settings?.victoryPointsToWin || 10;
+        let winner = null;
+
+        // First check if any player has reached victory points to win
+        for (const player of game.players) {
+            if (player.victoryPoints >= victoryPointsToWin) {
+                winner = player;
+                break;
+            }
+        }
+
+        // If no one reached the threshold, find player with most VP
+        if (!winner) {
+            winner = game.players.reduce((prev, current) =>
+                (prev.victoryPoints > current.victoryPoints) ? prev : current
+            );
+        }
+
+        // Determine the message based on who is playing as
+        const messageEl = document.getElementById('game-over-message');
+        const isWinner = this.playingAsPlayerId === winner.id;
+
+        if (isWinner) {
+            messageEl.textContent = "You've Won!";
+            messageEl.className = 'winner';
+        } else {
+            messageEl.textContent = `${winner.name} has won.`;
+            messageEl.className = '';
+        }
+
+        // Show final standings
+        const statsEl = document.getElementById('game-over-stats');
+        const sortedPlayers = [...game.players].sort((a, b) => b.victoryPoints - a.victoryPoints);
+
+        statsEl.innerHTML = sortedPlayers.map(player => {
+            const isPlayerWinner = player.id === winner.id;
+            return `
+                <div class="player-score ${isPlayerWinner ? 'winner' : ''}" style="border-left: 3px solid ${this.getPlayerCSSColor(player.color)}">
+                    <span class="player-name">${player.name}</span>
+                    <span class="player-vp">${player.victoryPoints} VP</span>
+                </div>
+            `;
+        }).join('');
+
+        // Show the modal
+        modal.classList.remove('hidden');
     },
 
     // ==================== UTILITIES ====================

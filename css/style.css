@@ -1008,3 +1008,58 @@ select:focus {
 .trade-resource-item.resource-Ore { color: #8a8a9a; }
 .trade-resource-item.resource-Grain { color: #d4a826; }
 .trade-resource-item.resource-Wool { color: #8bc34a; }
+
+/* Game Over Modal */
+.game-over-content {
+    text-align: center;
+}
+
+.game-over-content h2 {
+    border-bottom: none;
+    font-size: 1.5rem;
+}
+
+#game-over-message {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    color: #fff;
+}
+
+#game-over-message.winner {
+    color: #ffd700;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+#game-over-stats {
+    background-color: #0a1628;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+#game-over-stats .player-score {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    border-bottom: 1px solid #0f3460;
+}
+
+#game-over-stats .player-score:last-child {
+    border-bottom: none;
+}
+
+#game-over-stats .player-score.winner {
+    background-color: rgba(255, 215, 0, 0.1);
+    border-radius: 4px;
+}
+
+#game-over-stats .player-name {
+    font-weight: bold;
+}
+
+#game-over-stats .player-vp {
+    color: #e94560;
+    font-weight: bold;
+}
