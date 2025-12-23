@@ -439,6 +439,11 @@ const App = {
         // Render board
         Board.render(game);
 
+        // Re-apply selectable elements if in selection mode (board render clears them)
+        if (this.selectionMode && this.selectableIds?.length > 0) {
+            Board.setSelectableElements(this.selectionMode, this.selectableIds);
+        }
+
         // Render players
         this.renderPlayers();
 
@@ -765,6 +770,17 @@ const App = {
         // If no actions to show after filtering and no trade response button
         if (actionsToShow.length === 0 && !canRespondToTrade) {
             container.innerHTML = '<div class="log-entry">No actions available</div>';
+        }
+
+        // Auto-trigger selection for single placement actions during initial setup phases
+        // This skips the button click for PlaceSettlement/PlaceRoad when it's the only option
+        if (isMyTurn && actionsToShow.length === 1 && !this.selectionMode) {
+            const action = actionsToShow[0];
+            if (action.action === 'PlaceSettlement' && action.vertexIds?.length > 0) {
+                this.startSelection('vertex', action.vertexIds, this.currentGame.phase.currentPlayerId, 'PlaceSettlement');
+            } else if (action.action === 'PlaceRoad' && action.edgeIds?.length > 0) {
+                this.startSelection('edge', action.edgeIds, this.currentGame.phase.currentPlayerId, 'PlaceRoad');
+            }
         }
     },
 
