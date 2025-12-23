@@ -506,11 +506,11 @@ const App = {
             if (player.id === this.playingAsPlayerId && player.resources) {
                 const res = player.resources;
                 html += `<div class="player-resources">
-                    B:<span class="stat-value">${res.Brick}</span>
-                    W:<span class="stat-value">${res.Wood}</span>
-                    O:<span class="stat-value">${res.Ore}</span>
-                    G:<span class="stat-value">${res.Grain}</span>
-                    S:<span class="stat-value">${res.Wool}</span>
+                    <span class="resource-box resource-Brick">${res.Brick}</span>
+                    <span class="resource-box resource-Wood">${res.Wood}</span>
+                    <span class="resource-box resource-Ore">${res.Ore}</span>
+                    <span class="resource-box resource-Grain">${res.Grain}</span>
+                    <span class="resource-box resource-Wool">${res.Wool}</span>
                 </div>`;
             }
 

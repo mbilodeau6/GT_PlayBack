@@ -211,8 +211,41 @@ main {
 }
 
 .player-resources {
+    display: flex;
+    gap: 0.25rem;
+    margin-top: 0.35rem;
+}
+
+.resource-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 3px;
     font-size: 0.75rem;
-    color: #888;
+    font-weight: bold;
+    color: #000 !important;
+}
+
+.resource-box.resource-Brick {
+    background-color: #c45c3b;
+}
+
+.resource-box.resource-Wood {
+    background-color: #228b22;
+}
+
+.resource-box.resource-Ore {
+    background-color: #708090;
+}
+
+.resource-box.resource-Grain {
+    background-color: #daa520;
+}
+
+.resource-box.resource-Wool {
+    background-color: #90ee90;
 }
 
 .stat-value {
