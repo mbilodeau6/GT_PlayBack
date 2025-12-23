@@ -66,6 +66,7 @@ const App = {
         document.getElementById('menu-btn-add-player').addEventListener('click', () => this.addPlayer());
         document.getElementById('menu-btn-start-game').addEventListener('click', () => this.startGame());
         document.getElementById('menu-playing-as-select').addEventListener('change', (e) => this.onPlayingAsChanged(e.target.value));
+        document.getElementById('auto-refresh-toggle').addEventListener('change', (e) => this.setAutoRefreshEnabled(e.target.checked));
 
         // Refresh button
         document.getElementById('btn-refresh').addEventListener('click', () => this.refreshGameState());
@@ -109,7 +110,6 @@ const App = {
     openSettings() {
         document.getElementById('api-url-input').value = API.baseUrl;
         document.getElementById('api-key-input').value = API.apiKey;
-        document.getElementById('auto-refresh-toggle').checked = this.autoRefreshEnabled;
         document.getElementById('settings-modal').classList.remove('hidden');
     },
 
@@ -117,10 +117,6 @@ const App = {
         const url = document.getElementById('api-url-input').value.trim();
         const key = document.getElementById('api-key-input').value.trim();
         API.configure(url, key);
-
-        // Handle auto-refresh toggle
-        const autoRefreshEnabled = document.getElementById('auto-refresh-toggle').checked;
-        this.setAutoRefreshEnabled(autoRefreshEnabled);
 
         this.closeSettings();
         this.log('Settings saved', 'success');
@@ -159,6 +155,8 @@ const App = {
     openGameMenu() {
         // Update the playing-as dropdown in the menu
         this.populateMenuPlayerDropdown();
+        // Update auto-refresh checkbox
+        document.getElementById('auto-refresh-toggle').checked = this.autoRefreshEnabled;
         // Show/hide player management section based on game phase
         this.updateGameMenuUI();
         document.getElementById('game-menu-modal').classList.remove('hidden');
