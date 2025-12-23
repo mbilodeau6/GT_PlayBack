@@ -909,14 +909,13 @@ const App = {
         const offerContainer = document.getElementById('trade-offer-cards');
         offerContainer.innerHTML = '';
 
-        const resourceAbbrev = { Brick: 'B', Wood: 'W', Ore: 'O', Grain: 'G', Wool: 'S' };
         const resources = player.resources;
 
         Object.entries(resources).forEach(([resource, count]) => {
             for (let i = 0; i < count; i++) {
                 const card = document.createElement('div');
-                card.className = `discard-card resource-${resource}`;
-                card.textContent = resourceAbbrev[resource] || resource.substring(0, 1);
+                card.className = `trade-card resource-box resource-${resource}`;
+                card.title = resource;
                 card.dataset.resource = resource;
                 card.onclick = () => this.toggleTradeOfferCard(card, resource);
                 offerContainer.appendChild(card);
@@ -929,8 +928,8 @@ const App = {
 
         ['Brick', 'Wood', 'Ore', 'Grain', 'Wool'].forEach(resource => {
             const option = document.createElement('div');
-            option.className = `resource-option resource-${resource}`;
-            option.textContent = resource;
+            option.className = `trade-card resource-box resource-${resource}`;
+            option.title = resource;
             option.dataset.resource = resource;
             option.onclick = () => this.selectTradeRequest(option, resource);
             requestContainer.appendChild(option);
@@ -986,12 +985,18 @@ const App = {
     },
 
     selectTradeRequest(option, resource) {
-        // Deselect previous
-        document.querySelectorAll('#trade-request-options .resource-option').forEach(el => {
-            el.classList.remove('selected');
-        });
-        option.classList.add('selected');
-        this.selectedTradeRequest = resource;
+        // Toggle off if clicking the same one
+        if (this.selectedTradeRequest === resource) {
+            option.classList.remove('selected');
+            this.selectedTradeRequest = null;
+        } else {
+            // Deselect previous
+            document.querySelectorAll('#trade-request-options .trade-card').forEach(el => {
+                el.classList.remove('selected');
+            });
+            option.classList.add('selected');
+            this.selectedTradeRequest = resource;
+        }
         this.updateTradeSummary();
     },
 

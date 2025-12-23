@@ -587,6 +587,23 @@ select:focus {
     gap: 0.5rem;
 }
 
+.trade-card {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+
+.trade-card:hover {
+    border-color: #aaa;
+}
+
+.trade-card.selected {
+    border-color: #e94560;
+    box-shadow: 0 0 6px rgba(233, 69, 96, 0.6);
+}
+
 #trade-summary {
     background-color: #0a1628;
     padding: 0.75rem;
