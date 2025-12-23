@@ -772,14 +772,23 @@ const App = {
             container.innerHTML = '<div class="log-entry">No actions available</div>';
         }
 
-        // Auto-trigger selection for single placement actions during initial setup phases
-        // This skips the button click for PlaceSettlement/PlaceRoad when it's the only option
-        if (isMyTurn && actionsToShow.length === 1 && !this.selectionMode) {
+        // Auto-trigger actions when there's only one mandatory action available
+        // This skips the button click for actions the player must perform
+        const discardModalOpen = !document.getElementById('discard-modal').classList.contains('hidden');
+        if (isMyTurn && actionsToShow.length === 1 && !this.selectionMode && !discardModalOpen) {
             const action = actionsToShow[0];
+            const playerId = this.currentGame.phase.currentPlayerId;
+
             if (action.action === 'PlaceSettlement' && action.vertexIds?.length > 0) {
-                this.startSelection('vertex', action.vertexIds, this.currentGame.phase.currentPlayerId, 'PlaceSettlement');
+                this.startSelection('vertex', action.vertexIds, playerId, 'PlaceSettlement');
             } else if (action.action === 'PlaceRoad' && action.edgeIds?.length > 0) {
-                this.startSelection('edge', action.edgeIds, this.currentGame.phase.currentPlayerId, 'PlaceRoad');
+                this.startSelection('edge', action.edgeIds, playerId, 'PlaceRoad');
+            } else if (action.action === 'PlaceRobber' && action.tileIds?.length > 0) {
+                this.startSelection('tile', action.tileIds, playerId, 'PlaceRobber');
+            } else if (action.action === 'DiscardCards') {
+                const player = this.currentGame.players.find(p => p.id === playerId);
+                const discardCount = player ? Math.floor(player.resourceCount / 2) : 0;
+                this.showDiscardModal({ ...action, count: discardCount });
             }
         }
     },
@@ -1497,18 +1506,16 @@ const App = {
         const resources = ['Brick', 'Wood', 'Ore', 'Grain', 'Wool'];
         resources.forEach(resource => {
             const div = document.createElement('div');
-            div.className = `resource-option resource-${resource}`;
+            div.className = `resource-option resource-box resource-${resource}`;
             div.dataset.resource = resource;
+            div.title = resource;
 
-            // For maxSelect > 1, show count and +/- buttons
+            // For maxSelect > 1, show count
             if (maxSelect > 1) {
-                div.innerHTML = `
-                    <span class="resource-name">${resource}</span>
-                    <span class="resource-count" data-resource="${resource}">0</span>
-                `;
+                div.innerHTML = `<span class="resource-count" data-resource="${resource}">0</span>`;
                 div.onclick = () => this.incrementResourceOption(resource);
             } else {
-                div.textContent = resource;
+                // For single-select (Monopoly), no count needed
                 div.onclick = () => this.toggleResourceOption(div, resource);
             }
             container.appendChild(div);

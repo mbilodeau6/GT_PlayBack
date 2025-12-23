@@ -643,41 +643,56 @@ select:focus {
 #resource-selection {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 0.75rem;
     margin-bottom: 1rem;
+    justify-content: center;
 }
 
 .resource-option {
-    padding: 0.75rem 1.25rem;
-    background-color: #0f3460;
+    width: 48px;
+    height: 48px;
     border-radius: 6px;
     cursor: pointer;
     border: 2px solid transparent;
-    text-align: center;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 0.25rem;
-    min-width: 70px;
+    justify-content: center;
 }
 
 .resource-option:hover {
-    background-color: #1a4a80;
+    border-color: #aaa;
 }
 
 .resource-option.selected {
     border-color: #e94560;
-    background-color: #1a4a80;
-}
-
-.resource-option .resource-name {
-    font-size: 0.85rem;
+    box-shadow: 0 0 6px rgba(233, 69, 96, 0.6);
 }
 
 .resource-option .resource-count {
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     font-weight: bold;
-    color: #e94560;
+    color: #000 !important;
+}
+
+/* Resource option background colors */
+.resource-option.resource-Brick {
+    background-color: #c45c3b;
+}
+
+.resource-option.resource-Wood {
+    background-color: #228b22;
+}
+
+.resource-option.resource-Ore {
+    background-color: #708090;
+}
+
+.resource-option.resource-Grain {
+    background-color: #daa520;
+}
+
+.resource-option.resource-Wool {
+    background-color: #90ee90;
 }
 
 /* ==================== SVG Board Styles ==================== */
