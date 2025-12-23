@@ -504,11 +504,11 @@ const App = {
             if (player.id === this.playingAsPlayerId && player.resources) {
                 const res = player.resources;
                 html += `<div class="player-resources">
-                    <span class="resource-box resource-Brick">${res.Brick}</span>
-                    <span class="resource-box resource-Wood">${res.Wood}</span>
-                    <span class="resource-box resource-Ore">${res.Ore}</span>
-                    <span class="resource-box resource-Grain">${res.Grain}</span>
-                    <span class="resource-box resource-Wool">${res.Wool}</span>
+                    <span class="resource-box resource-Brick" title="Brick: ${res.Brick}">${res.Brick}</span>
+                    <span class="resource-box resource-Wood" title="Wood: ${res.Wood}">${res.Wood}</span>
+                    <span class="resource-box resource-Ore" title="Ore: ${res.Ore}">${res.Ore}</span>
+                    <span class="resource-box resource-Grain" title="Grain: ${res.Grain}">${res.Grain}</span>
+                    <span class="resource-box resource-Wool" title="Wool: ${res.Wool}">${res.Wool}</span>
                 </div>`;
             }
 
