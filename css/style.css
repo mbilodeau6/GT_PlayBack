@@ -709,6 +709,14 @@ select:focus {
     stroke-width: 1;
 }
 
+.probability-dot {
+    fill: #1a1a2e;
+}
+
+.probability-dot.red {
+    fill: #e94560;
+}
+
 .tile-id {
     fill: #1a1a2e;
     font-size: 10px;

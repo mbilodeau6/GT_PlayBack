@@ -139,13 +139,48 @@ const Board = {
         bg.setAttribute('class', 'tile-number-bg');
         this.layers.labels.appendChild(bg);
 
-        // Number text
+        // Number text (shifted up slightly to make room for dots)
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         text.setAttribute('x', cx);
-        text.setAttribute('y', cy);
+        text.setAttribute('y', cy - 2);
         text.setAttribute('class', `tile-number${(number === 6 || number === 8) ? ' red' : ''}`);
         text.textContent = number;
         this.layers.labels.appendChild(text);
+
+        // Add probability dots
+        const dotCount = this.getProbabilityDots(number);
+        const isRed = (number === 6 || number === 8);
+        this.renderProbabilityDots(cx, cy + 10, dotCount, isRed);
+    },
+
+    getProbabilityDots(number) {
+        // Number of ways to roll each number with 2 dice
+        const dotMap = {
+            2: 1, 12: 1,
+            3: 2, 11: 2,
+            4: 3, 10: 3,
+            5: 4, 9: 4,
+            6: 5, 8: 5
+        };
+        return dotMap[number] || 0;
+    },
+
+    renderProbabilityDots(cx, cy, count, isRed) {
+        if (count === 0) return;
+
+        const dotRadius = 2;
+        const dotSpacing = 5;
+        const totalWidth = (count - 1) * dotSpacing;
+        const startX = cx - totalWidth / 2;
+
+        for (let i = 0; i < count; i++) {
+            const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            dot.setAttribute('cx', startX + i * dotSpacing);
+            dot.setAttribute('cy', cy);
+            dot.setAttribute('r', dotRadius);
+            dot.setAttribute('class', isRed ? 'probability-dot red' : 'probability-dot');
+            this.layers.labels.appendChild(dot);
+        }
     },
 
     // ==================== ROBBER ====================
