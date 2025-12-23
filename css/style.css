@@ -856,47 +856,57 @@ select:focus {
 }
 
 /* Player Trade Modal */
-#player-trade-offer-section,
-#player-trade-request-section {
-    margin-bottom: 1rem;
-}
-
-#player-trade-offer-section h3,
-#player-trade-request-section h3 {
-    font-size: 0.9rem;
-    color: #aaa;
+#player-trade-header {
+    display: grid;
+    grid-template-columns: 28px 40px 1fr 1fr;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
     margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    color: #888;
+    text-align: center;
 }
 
-#player-trade-offer,
-#player-trade-request {
+#player-trade-header .trade-col-available {
+    text-align: center;
+}
+
+#player-trade-resources {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    margin-bottom: 1rem;
 }
 
-.trade-resource-row {
-    display: flex;
-    align-items: center;
+.trade-unified-row {
+    display: grid;
+    grid-template-columns: 28px 40px 1fr 1fr;
     gap: 0.5rem;
+    align-items: center;
     padding: 0.5rem;
     background-color: #0a1628;
     border-radius: 6px;
 }
 
-.trade-resource-row .resource-name {
-    flex: 1;
+.trade-unified-row .resource-box {
+    width: 24px;
+    height: 24px;
+}
+
+.trade-unified-row .trade-available {
     font-size: 0.9rem;
-    color: #eee;
-}
-
-.trade-resource-row .resource-available {
-    font-size: 0.8rem;
     color: #888;
-    min-width: 30px;
+    text-align: center;
 }
 
-.trade-resource-row .resource-count {
+.trade-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+.trade-controls .trade-count {
     font-size: 1rem;
     font-weight: bold;
     min-width: 24px;
@@ -941,12 +951,6 @@ select:focus {
     font-size: 0.85rem;
 }
 
-/* Resource row colors */
-.trade-resource-row.resource-Brick .resource-name { color: #c45c26; }
-.trade-resource-row.resource-Wood .resource-name { color: #2d5a27; }
-.trade-resource-row.resource-Ore .resource-name { color: #8a8a9a; }
-.trade-resource-row.resource-Grain .resource-name { color: #d4a826; }
-.trade-resource-row.resource-Wool .resource-name { color: #8bc34a; }
 
 /* Respond to Trade Modal */
 #respond-trade-from {

@@ -1100,59 +1100,44 @@ const App = {
         this.playerTradePlayerId = playerId;
         this.playerTradeResources = player.resources;
 
-        this.renderPlayerTradeOffer();
-        this.renderPlayerTradeRequest();
+        this.renderPlayerTradeResources();
         this.updatePlayerTradeSummary();
         document.getElementById('player-trade-modal').classList.remove('hidden');
     },
 
-    renderPlayerTradeOffer() {
-        const container = document.getElementById('player-trade-offer');
+    renderPlayerTradeResources() {
+        const container = document.getElementById('player-trade-resources');
         container.innerHTML = '';
 
         const resources = ['Brick', 'Wood', 'Ore', 'Grain', 'Wool'];
         resources.forEach(resource => {
             const available = this.playerTradeResources[resource] || 0;
-            const selected = this.playerTradeOffer[resource] || 0;
+            const offerCount = this.playerTradeOffer[resource] || 0;
+            const requestCount = this.playerTradeRequest[resource] || 0;
 
-            const div = document.createElement('div');
-            div.className = `trade-resource-row resource-${resource}`;
-            div.innerHTML = `
-                <span class="resource-name">${resource}</span>
-                <span class="resource-available">(${available})</span>
-                <button class="trade-btn minus" data-resource="${resource}" ${selected <= 0 ? 'disabled' : ''}>-</button>
-                <span class="resource-count">${selected}</span>
-                <button class="trade-btn plus" data-resource="${resource}" ${selected >= available ? 'disabled' : ''}>+</button>
+            const row = document.createElement('div');
+            row.className = 'trade-unified-row';
+            row.innerHTML = `
+                <span class="resource-box resource-${resource}" title="${resource}"></span>
+                <span class="trade-available">${available}</span>
+                <div class="trade-controls offer-controls">
+                    <button class="trade-btn minus offer-minus" ${offerCount <= 0 ? 'disabled' : ''}>-</button>
+                    <span class="trade-count offer-count">${offerCount}</span>
+                    <button class="trade-btn plus offer-plus" ${offerCount >= available ? 'disabled' : ''}>+</button>
+                </div>
+                <div class="trade-controls request-controls">
+                    <button class="trade-btn minus request-minus" ${requestCount <= 0 ? 'disabled' : ''}>-</button>
+                    <span class="trade-count request-count">${requestCount}</span>
+                    <button class="trade-btn plus request-plus">+</button>
+                </div>
             `;
 
-            div.querySelector('.minus').onclick = () => this.adjustPlayerTradeOffer(resource, -1);
-            div.querySelector('.plus').onclick = () => this.adjustPlayerTradeOffer(resource, 1);
+            row.querySelector('.offer-minus').onclick = () => this.adjustPlayerTradeOffer(resource, -1);
+            row.querySelector('.offer-plus').onclick = () => this.adjustPlayerTradeOffer(resource, 1);
+            row.querySelector('.request-minus').onclick = () => this.adjustPlayerTradeRequest(resource, -1);
+            row.querySelector('.request-plus').onclick = () => this.adjustPlayerTradeRequest(resource, 1);
 
-            container.appendChild(div);
-        });
-    },
-
-    renderPlayerTradeRequest() {
-        const container = document.getElementById('player-trade-request');
-        container.innerHTML = '';
-
-        const resources = ['Brick', 'Wood', 'Ore', 'Grain', 'Wool'];
-        resources.forEach(resource => {
-            const selected = this.playerTradeRequest[resource] || 0;
-
-            const div = document.createElement('div');
-            div.className = `trade-resource-row resource-${resource}`;
-            div.innerHTML = `
-                <span class="resource-name">${resource}</span>
-                <button class="trade-btn minus" data-resource="${resource}" ${selected <= 0 ? 'disabled' : ''}>-</button>
-                <span class="resource-count">${selected}</span>
-                <button class="trade-btn plus" data-resource="${resource}">+</button>
-            `;
-
-            div.querySelector('.minus').onclick = () => this.adjustPlayerTradeRequest(resource, -1);
-            div.querySelector('.plus').onclick = () => this.adjustPlayerTradeRequest(resource, 1);
-
-            container.appendChild(div);
+            container.appendChild(row);
         });
     },
 
@@ -1161,7 +1146,7 @@ const App = {
         const current = this.playerTradeOffer[resource] || 0;
         const newValue = Math.max(0, Math.min(available, current + delta));
         this.playerTradeOffer[resource] = newValue;
-        this.renderPlayerTradeOffer();
+        this.renderPlayerTradeResources();
         this.updatePlayerTradeSummary();
     },
 
@@ -1169,7 +1154,7 @@ const App = {
         const current = this.playerTradeRequest[resource] || 0;
         const newValue = Math.max(0, current + delta);
         this.playerTradeRequest[resource] = newValue;
-        this.renderPlayerTradeRequest();
+        this.renderPlayerTradeResources();
         this.updatePlayerTradeSummary();
     },
 
