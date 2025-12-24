@@ -170,8 +170,8 @@ const App = {
         // Show player management only during setup
         document.getElementById('menu-player-management').classList.toggle('hidden', !isSetup);
 
-        // Show/hide playing as based on whether game has started
-        document.getElementById('menu-playing-as-container').classList.toggle('hidden', !hasGame || isSetup);
+        // Show playing as dropdown whenever a game is loaded (even during setup)
+        document.getElementById('menu-playing-as-container').classList.toggle('hidden', !hasGame);
 
         // Update start game button visibility
         const canStart = isSetup && this.currentGame?.players?.length >= 2;
