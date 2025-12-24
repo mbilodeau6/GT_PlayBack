@@ -8,10 +8,10 @@ const Board = {
 
     // Layers for proper z-ordering
     layers: {
-        portLines: null,
         tiles: null,
-        edgePlaceholders: null,
         roads: null,
+        portLines: null,
+        edgePlaceholders: null,
         vertexPlaceholders: null,
         buildings: null,
         robber: null,
@@ -39,10 +39,10 @@ const Board = {
     createLayers() {
         // Create groups for layered rendering (bottom to top)
         const layerNames = [
-            'portLines',
             'tiles',
-            'edgePlaceholders',
             'roads',
+            'portLines',
+            'edgePlaceholders',
             'vertexPlaceholders',
             'buildings',
             'robber',
@@ -74,10 +74,10 @@ const Board = {
         this.calculateTilePositions();
 
         // Render in order (bottom to top)
-        this.renderPorts();
         this.renderTiles();
-        this.renderEdgePlaceholders();
         this.renderRoads();
+        this.renderPorts();
+        this.renderEdgePlaceholders();
         this.renderVertexPlaceholders();
         this.renderBuildings();
         this.renderRobber();
