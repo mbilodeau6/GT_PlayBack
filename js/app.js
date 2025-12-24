@@ -516,12 +516,23 @@ const App = {
             // Show resources only for the player selected in "Playing as" dropdown
             if (player.id === this.playingAsPlayerId && player.resources) {
                 const res = player.resources;
-                html += `<div class="player-resources">
-                    <span class="resource-box resource-Brick" title="Brick: ${res.Brick}">${res.Brick}</span>
-                    <span class="resource-box resource-Wood" title="Wood: ${res.Wood}">${res.Wood}</span>
-                    <span class="resource-box resource-Ore" title="Ore: ${res.Ore}">${res.Ore}</span>
-                    <span class="resource-box resource-Grain" title="Grain: ${res.Grain}">${res.Grain}</span>
-                    <span class="resource-box resource-Wool" title="Wool: ${res.Wool}">${res.Wool}</span>
+                const isCurrentPlayer = this.currentGame.phase?.currentPlayerId === player.id;
+
+                // Build dev cards display for current player only
+                let devCardsHtml = '';
+                if (isCurrentPlayer) {
+                    devCardsHtml = this.renderDevCardsDisplay(player);
+                }
+
+                html += `<div class="player-resources-row">
+                    <div class="player-resources">
+                        <span class="resource-box resource-Brick" title="Brick: ${res.Brick}">${res.Brick}</span>
+                        <span class="resource-box resource-Wood" title="Wood: ${res.Wood}">${res.Wood}</span>
+                        <span class="resource-box resource-Ore" title="Ore: ${res.Ore}">${res.Ore}</span>
+                        <span class="resource-box resource-Grain" title="Grain: ${res.Grain}">${res.Grain}</span>
+                        <span class="resource-box resource-Wool" title="Wool: ${res.Wool}">${res.Wool}</span>
+                    </div>
+                    ${devCardsHtml}
                 </div>`;
             }
 
@@ -1680,6 +1691,48 @@ const App = {
             'White': '#ecf0f1'
         };
         return colors[colorName] || '#888';
+    },
+
+    renderDevCardsDisplay(player) {
+        const cardLetters = {
+            'Knight': 'K',
+            'YearOfPlenty': 'Y',
+            'Monopoly': 'M',
+            'RoadBuilding': 'R'
+        };
+
+        const cardNames = {
+            'Knight': 'Knight',
+            'YearOfPlenty': 'Year of Plenty',
+            'Monopoly': 'Monopoly',
+            'RoadBuilding': 'Road Building'
+        };
+
+        // Get cards ready to play (white) - exclude VictoryPoint
+        const readyCards = (player.devCardsReadyToPlay || [])
+            .filter(c => c !== 'VictoryPoint')
+            .map(c => ({ type: c, available: true }));
+
+        // Get cards purchased this round (grey) - exclude VictoryPoint
+        const purchasedCards = (player.devCardsPurchasedThisRound || [])
+            .filter(c => c !== 'VictoryPoint')
+            .map(c => ({ type: c, available: false }));
+
+        const allCards = [...readyCards, ...purchasedCards];
+
+        if (allCards.length === 0) {
+            return '';
+        }
+
+        const cardSpans = allCards.map(card => {
+            const letter = cardLetters[card.type] || '?';
+            const name = cardNames[card.type] || card.type;
+            const colorClass = card.available ? 'dev-card-ready' : 'dev-card-purchased';
+            const statusText = card.available ? '(Ready)' : '(Purchased this turn)';
+            return `<span class="dev-card-letter ${colorClass}" title="${name} ${statusText}">${letter}</span>`;
+        }).join('');
+
+        return `<div class="player-dev-cards">(${cardSpans})</div>`;
     },
 
     log(message, type = '') {

@@ -210,10 +210,34 @@ main {
     color: #aaa;
 }
 
+.player-resources-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.35rem;
+}
+
 .player-resources {
     display: flex;
     gap: 0.25rem;
-    margin-top: 0.35rem;
+}
+
+.player-dev-cards {
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: #aaa;
+}
+
+.dev-card-letter {
+    margin: 0 1px;
+}
+
+.dev-card-ready {
+    color: #fff;
+}
+
+.dev-card-purchased {
+    color: #666;
 }
 
 .resource-box {
