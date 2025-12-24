@@ -757,7 +757,12 @@ const App = {
                 case 'AcceptTrade':
                     // Find players who have accepted the trade
                     const acceptedResponses = pendingResponses.filter(r => r.responseType === 'Accept');
-                    btn.textContent = `Accept Trade (${acceptedResponses.length} offers)`;
+                    if (acceptedResponses.length === 1) {
+                        const acceptingPlayerName = this.getPlayerName(acceptedResponses[0].playerId);
+                        btn.textContent = `Accept Trade (${acceptingPlayerName})`;
+                    } else {
+                        btn.textContent = `Accept Trade (${acceptedResponses.length} offers)`;
+                    }
                     btn.classList.add('highlight');
                     btn.onclick = () => this.showAcceptTradeModal(acceptedResponses);
                     break;
