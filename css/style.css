@@ -1042,6 +1042,24 @@ select:focus {
     flex-wrap: wrap;
 }
 
+/* Accept Trade Modal */
+#accept-trade-players {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.accept-trade-player-btn {
+    background-color: #1a3a5c;
+    text-align: left;
+    padding: 0.75rem 1rem;
+}
+
+.accept-trade-player-btn:hover:not(:disabled) {
+    background-color: #245080;
+}
+
 /* Game Over Modal */
 .game-over-content {
     text-align: center;

@@ -1480,8 +1480,8 @@ const App = {
             const player = this.currentGame?.players?.find(p => p.id === response.playerId);
 
             const btn = document.createElement('button');
-            btn.className = 'action-btn';
-            btn.style.borderLeftColor = this.getPlayerCSSColor(player?.color);
+            btn.className = 'accept-trade-player-btn';
+            btn.style.borderLeft = `4px solid ${this.getPlayerCSSColor(player?.color)}`;
             btn.textContent = playerName;
             btn.onclick = () => {
                 this.closeModal('accept-trade-modal');
