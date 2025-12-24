@@ -1384,15 +1384,19 @@ const App = {
         const offerContainer = document.getElementById('respond-trade-offer');
         offerContainer.innerHTML = '';
         const offer = originalTrade.offer || {};
-        Object.entries(offer).forEach(([resource, count]) => {
-            if (count > 0) {
-                const div = document.createElement('div');
-                div.className = `trade-resource-item resource-${resource}`;
-                div.textContent = `${count} ${resource}`;
-                offerContainer.appendChild(div);
-            }
-        });
-        if (Object.keys(offer).length === 0 || Object.values(offer).every(v => v === 0)) {
+        const offerEntries = Object.entries(offer).filter(([_, count]) => count > 0);
+        if (offerEntries.length > 0) {
+            const boxContainer = document.createElement('div');
+            boxContainer.className = 'trade-resource-boxes';
+            offerEntries.forEach(([resource, count]) => {
+                const span = document.createElement('span');
+                span.className = `resource-box resource-${resource}`;
+                span.title = `${count} ${resource}`;
+                span.textContent = count;
+                boxContainer.appendChild(span);
+            });
+            offerContainer.appendChild(boxContainer);
+        } else {
             offerContainer.innerHTML = '<div class="trade-resource-item">Nothing</div>';
         }
 
@@ -1400,15 +1404,19 @@ const App = {
         const requestContainer = document.getElementById('respond-trade-request');
         requestContainer.innerHTML = '';
         const request = originalTrade.request || {};
-        Object.entries(request).forEach(([resource, count]) => {
-            if (count > 0) {
-                const div = document.createElement('div');
-                div.className = `trade-resource-item resource-${resource}`;
-                div.textContent = `${count} ${resource}`;
-                requestContainer.appendChild(div);
-            }
-        });
-        if (Object.keys(request).length === 0 || Object.values(request).every(v => v === 0)) {
+        const requestEntries = Object.entries(request).filter(([_, count]) => count > 0);
+        if (requestEntries.length > 0) {
+            const boxContainer = document.createElement('div');
+            boxContainer.className = 'trade-resource-boxes';
+            requestEntries.forEach(([resource, count]) => {
+                const span = document.createElement('span');
+                span.className = `resource-box resource-${resource}`;
+                span.title = `${count} ${resource}`;
+                span.textContent = count;
+                boxContainer.appendChild(span);
+            });
+            requestContainer.appendChild(boxContainer);
+        } else {
             requestContainer.innerHTML = '<div class="trade-resource-item">Nothing</div>';
         }
 

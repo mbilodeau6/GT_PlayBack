@@ -1036,11 +1036,11 @@ select:focus {
     font-size: 0.9rem;
 }
 
-.trade-resource-item.resource-Brick { color: #c45c26; }
-.trade-resource-item.resource-Wood { color: #2d5a27; }
-.trade-resource-item.resource-Ore { color: #8a8a9a; }
-.trade-resource-item.resource-Grain { color: #d4a826; }
-.trade-resource-item.resource-Wool { color: #8bc34a; }
+.trade-resource-boxes {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
 
 /* Game Over Modal */
 .game-over-content {
