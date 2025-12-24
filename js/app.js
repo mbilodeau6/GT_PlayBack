@@ -516,13 +516,9 @@ const App = {
             // Show resources only for the player selected in "Playing as" dropdown
             if (player.id === this.playingAsPlayerId && player.resources) {
                 const res = player.resources;
-                const isCurrentPlayer = this.currentGame.phase?.currentPlayerId === player.id;
 
-                // Build dev cards display for current player only
-                let devCardsHtml = '';
-                if (isCurrentPlayer) {
-                    devCardsHtml = this.renderDevCardsDisplay(player);
-                }
+                // Build dev cards display for the "Playing as" player
+                const devCardsHtml = this.renderDevCardsDisplay(player);
 
                 html += `<div class="player-resources-row">
                     <div class="player-resources">
