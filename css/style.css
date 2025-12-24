@@ -870,6 +870,13 @@ select:focus {
     stroke-width: 1;
 }
 
+/* 2:1 Port background colors - match tile resource colors */
+.port-bg-Brick { fill: #c45c26; }
+.port-bg-Wood { fill: #2d5a27; }
+.port-bg-Ore { fill: #5a5a6a; }
+.port-bg-Grain { fill: #d4a826; }
+.port-bg-Wool { fill: #8bc34a; }
+
 /* Player Trade Modal */
 #player-trade-header {
     display: grid;

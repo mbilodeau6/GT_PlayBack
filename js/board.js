@@ -544,33 +544,53 @@ const Board = {
 
         // Background for label
         const labelText = this.getPortLabel(port.type);
+        const tooltipText = this.getPortTooltip(port.type);
+
+        // Create a group for the port label elements (for tooltip)
+        const portGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        portGroup.setAttribute('class', 'port-group');
+
         const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         bg.setAttribute('x', midX + offsetX - 18);
         bg.setAttribute('y', midY + offsetY - 10);
         bg.setAttribute('width', 36);
         bg.setAttribute('height', 20);
         bg.setAttribute('rx', 4);
-        bg.setAttribute('class', 'port-bg');
-        this.layers.portLabels.appendChild(bg);
+
+        // Apply resource-specific class for 2:1 ports
+        const bgClass = port.type === 'ThreeToOne' ? 'port-bg' : `port-bg port-bg-${port.type}`;
+        bg.setAttribute('class', bgClass);
+        portGroup.appendChild(bg);
 
         const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         label.setAttribute('x', midX + offsetX);
         label.setAttribute('y', midY + offsetY);
         label.setAttribute('class', 'port-label');
         label.textContent = labelText;
-        this.layers.portLabels.appendChild(label);
+        portGroup.appendChild(label);
+
+        // Add tooltip
+        const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+        title.textContent = tooltipText;
+        portGroup.appendChild(title);
+
+        this.layers.portLabels.appendChild(portGroup);
     },
 
     getPortLabel(type) {
-        const labels = {
-            'ThreeToOne': '3:1',
-            'Brick': '2:1 B',
-            'Wood': '2:1 W',
-            'Ore': '2:1 O',
-            'Grain': '2:1 G',
-            'Wool': '2:1 S'  // S for Sheep/Wool
+        return type === 'ThreeToOne' ? '3:1' : '2:1';
+    },
+
+    getPortTooltip(type) {
+        const tooltips = {
+            'ThreeToOne': '3:1 Port',
+            'Brick': '2:1 Brick Port',
+            'Wood': '2:1 Wood Port',
+            'Ore': '2:1 Ore Port',
+            'Grain': '2:1 Grain Port',
+            'Wool': '2:1 Wool Port'
         };
-        return labels[type] || type;
+        return tooltips[type] || type;
     },
 
     // ==================== SELECTION HIGHLIGHTING ====================

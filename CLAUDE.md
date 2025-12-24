@@ -1,6 +1,8 @@
-GT_PLAYBACK is a static web app that will be hosted as an Azure Static Web app. Please check with the user if you are going to use any technology or techniques that might make this difficult or require paid Azure services.
+GT_PLAYBACK is a static web app that will be hosted as an Azure Static Web app. It is the front-end for a Settlers of Catan type game. Please check with the user if you are going to use any technology or techniques that might make this difficult or require paid Azure services.
 
-GT_PLAYBACK is the front-end for a Settlers of Catan type game. The back-end is also hosted in Azure as an Azure Function App (i.e. a serverless app). Below are samples of the API calls the back-end supports:
+Whenever the game needs to present resources to the user, the resources should be displayed as colored blocks. The color should match the colors used on the main board and the box should have a tooltip that indicates the resource name (Wood, Brick, Wool, Grain, Ore). Display of elements and concepts should be consistent in all of the components that make up the game.
+
+The back-end is also hosted in Azure as an Azure Function App (i.e. a serverless app). Below are samples of the API calls the back-end supports:
 
 CREATE_GAME: curl -X POST "https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net/api/Games" -H "Content-Type: application/json" -d "{\"gameType\":\"Starter\"}" -H "x-functions-key: <SECRET>"
 
