@@ -500,13 +500,21 @@ const App = {
             // Count played knights
             const knightCount = (player.devCardsPlayed || []).filter(c => c === 'Knight').length;
 
+            // Build VP display - show full VP in brackets if different (only for "Playing as" player)
+            let vpDisplay = `<span class="stat-value">${player.victoryPoints}</span>`;
+            if (player.id === this.playingAsPlayerId &&
+                player.fullVictoryPoints !== undefined &&
+                player.fullVictoryPoints !== player.victoryPoints) {
+                vpDisplay += ` <span class="stat-value">(${player.fullVictoryPoints})</span>`;
+            }
+
             let html = `
                 <div class="player-card-header">
                     <div class="player-name">${player.name} ${player.isBot ? '(Bot)' : ''} ${badges.join(' ')}</div>
                     ${isSetup ? `<button class="remove-btn" data-player-id="${player.id}">Remove</button>` : ''}
                 </div>
                 <div class="player-stats">
-                    VP: <span class="stat-value">${player.victoryPoints}</span> |
+                    VP: ${vpDisplay} |
                     Cards: <span class="stat-value">${player.resourceCount}</span> |
                     Dev: <span class="stat-value">${player.developmentCardCount}</span> |
                     Knights: <span class="stat-value">${knightCount}</span>
