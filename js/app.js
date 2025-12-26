@@ -777,6 +777,12 @@ const App = {
                     btn.onclick = () => this.doCancelTrade();
                     break;
 
+                case 'SelectTarget':
+                    btn.textContent = 'Select Target';
+                    btn.classList.add('highlight');
+                    btn.onclick = () => this.showSelectTargetModal(action.playerIds);
+                    break;
+
                 default:
                     btn.textContent = action.action;
                     btn.disabled = true;
@@ -1509,6 +1515,47 @@ const App = {
         if (response.success) {
             this.handleGameResponse(response);
             this.log('Trade completed!', 'success');
+        } else {
+            this.log(`Error: ${response.errorMessage}`, 'error');
+        }
+    },
+
+    // ==================== SELECT TARGET ====================
+
+    showSelectTargetModal(playerIds) {
+        const container = document.getElementById('select-target-players');
+        container.innerHTML = '';
+
+        playerIds.forEach(playerId => {
+            const playerName = this.getPlayerName(playerId);
+            const player = this.currentGame?.players?.find(p => p.id === playerId);
+
+            const btn = document.createElement('button');
+            btn.className = 'select-target-player-btn';
+            btn.style.borderLeft = `4px solid ${this.getPlayerCSSColor(player?.color)}`;
+            btn.textContent = playerName;
+            btn.onclick = () => {
+                this.closeModal('select-target-modal');
+                this.doSelectTarget(playerId);
+            };
+            container.appendChild(btn);
+        });
+
+        document.getElementById('select-target-modal').classList.remove('hidden');
+    },
+
+    async doSelectTarget(targetPlayerId) {
+        this.log(`Selecting ${this.getPlayerName(targetPlayerId)} as target...`);
+
+        const response = await API.selectTarget(
+            this.currentGameId,
+            this.playingAsPlayerId,
+            targetPlayerId
+        );
+
+        if (response.success) {
+            this.handleGameResponse(response);
+            this.log(`Stole from ${this.getPlayerName(targetPlayerId)}!`, 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
         }

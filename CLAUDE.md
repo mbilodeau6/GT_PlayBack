@@ -34,6 +34,8 @@ REJECT_ALL_OFFERS: curl -X POST "https://gametest-heb2a9a4b9ecgmht.canadacentral
 
 PLACE_ROBBER: curl -X POST "https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net/api/Games/<GAME_ID>/place-robber" -H "Content-Type: application/json" -d "{\"playerId\":\"P1\",\"tileId\":\"T15\"}" -H "x-functions-key: <SECRET>"
 
+SELECT_TARGET: curl -X POST "https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net/api/Games/<GAME_ID>/select-target" -H "Content-Type: application/json" -d "{\"playerId\":\"P1\",\"targetPlayerId\":\"P2\"}"  -H "x-functions-key: <SECRET>"
+
 BUY_DEVCARD: curl -X POST "https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net/api/Games/<GAME_ID>/dev-card/buy" -H "Content-Type: application/json" -d "{\"playerId\":\"P1\"}" -H "x-functions-key: <SECRET>"
 
 YEAR_OF_PLENTY: curl -X POST "https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net/api/Games/<GAME_ID>/dev-card/play" -H "Content-Type: application/json" -d "{\"playerId\":\"P1\",\"devCardType\":\"YearOfPlenty\",\"selectedResources\":[\"Brick\",\"Wood\"]}" -H "x-functions-key: <SECRET>"

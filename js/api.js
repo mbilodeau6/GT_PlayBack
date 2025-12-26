@@ -144,6 +144,13 @@ const API = {
         });
     },
 
+    async selectTarget(gameId, playerId, targetPlayerId) {
+        return this.request('POST', `/api/Games/${gameId}/select-target`, {
+            playerId,
+            targetPlayerId
+        });
+    },
+
     // ==================== TRADING ====================
 
     async tradeWithBank(gameId, playerId, offer, request) {
