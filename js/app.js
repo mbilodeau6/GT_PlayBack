@@ -451,6 +451,9 @@ const App = {
         // Populate player selection dropdown
         this.populatePlayerDropdown();
 
+        // Render event log
+        this.renderEventLog();
+
         // Enable refresh button
         document.getElementById('btn-refresh').disabled = false;
 
@@ -872,8 +875,6 @@ const App = {
 
         this.cancelSelection();
 
-        this.log(`${action}: ${id}`);
-
         let response;
         switch (action) {
             case 'PlaceSettlement':
@@ -895,7 +896,6 @@ const App = {
 
         if (response?.success) {
             this.handleGameResponse(response);
-            this.log(`${action} completed`, 'success');
         } else {
             this.log(`Error: ${response?.errorMessage}`, 'error');
         }
@@ -904,49 +904,40 @@ const App = {
     // ==================== GAME ACTIONS ====================
 
     async doRollDice(playerId) {
-        this.log('Rolling dice...');
         const response = await API.rollDice(this.currentGameId);
 
         if (response.success) {
             this.handleGameResponse(response);
-            const dice = response.gameState.dice;
-            this.log(`Rolled ${dice.die1.value} + ${dice.die2.value} = ${dice.die1.value + dice.die2.value}`, 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
         }
     },
 
     async doEndTurn(playerId) {
-        this.log('Ending turn...');
         const response = await API.endTurn(this.currentGameId);
 
         if (response.success) {
             this.handleGameResponse(response);
-            this.log('Turn ended', 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
         }
     },
 
     async doBuyDevCard(playerId) {
-        this.log('Buying development card...');
         const response = await API.buyDevCard(this.currentGameId, playerId);
 
         if (response.success) {
             this.handleGameResponse(response);
-            this.log('Development card purchased', 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
         }
     },
 
     async doPlayRoadBuilding(playerId) {
-        this.log('Playing Road Building...');
         const response = await API.playRoadBuilding(this.currentGameId, playerId);
 
         if (response.success) {
             this.handleGameResponse(response);
-            this.log('Road Building played', 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
         }
@@ -1135,13 +1126,11 @@ const App = {
         const request = { [this.selectedTradeRequest]: receiveCount };
 
         this.closeModal('trade-modal');
-        this.log('Trading with bank...');
 
         const response = await API.tradeWithBank(this.currentGameId, playerId, offer, request);
 
         if (response.success) {
             this.handleGameResponse(response);
-            this.log('Trade completed', 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
         }
@@ -1259,7 +1248,6 @@ const App = {
         });
 
         this.closeModal('player-trade-modal');
-        this.log('Opening trade with other players...');
 
         const response = await API.openTrade(
             this.currentGameId,
@@ -1270,15 +1258,12 @@ const App = {
 
         if (response.success) {
             this.handleGameResponse(response);
-            this.log('Trade offer sent to other players', 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
         }
     },
 
     async doCancelTrade() {
-        this.log('Cancelling trade...');
-
         const response = await API.rejectAllOffers(
             this.currentGameId,
             this.playingAsPlayerId
@@ -1286,7 +1271,6 @@ const App = {
 
         if (response.success) {
             this.handleGameResponse(response);
-            this.log('Trade cancelled', 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
         }
@@ -1340,7 +1324,6 @@ const App = {
 
     async confirmDiscard() {
         this.closeModal('discard-modal');
-        this.log(`Discarding ${this.selectedDiscards.length} cards...`);
 
         const response = await API.discardCards(
             this.currentGameId,
@@ -1350,7 +1333,6 @@ const App = {
 
         if (response.success) {
             this.handleGameResponse(response);
-            this.log('Cards discarded', 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
         }
@@ -1363,13 +1345,11 @@ const App = {
             this.doSteal(playerId, action.targetPlayerIds[0]);
         } else {
             // TODO: Show modal to pick target
-            this.log('Multiple steal targets - picking first one');
             this.doSteal(playerId, action.targetPlayerIds[0]);
         }
     },
 
     async doSteal(playerId, targetPlayerId) {
-        this.log(`Stealing from ${targetPlayerId}...`);
         // Note: The steal happens automatically after placing robber in most implementations
         // If your API requires a separate call, add it here
     },
@@ -1440,7 +1420,6 @@ const App = {
 
     async acceptTradeOffer() {
         this.closeModal('respond-trade-modal');
-        this.log('Accepting trade offer...');
 
         const response = await API.respondToTrade(
             this.currentGameId,
@@ -1450,7 +1429,6 @@ const App = {
 
         if (response.success) {
             this.handleGameResponse(response);
-            this.log('Trade accepted', 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
         }
@@ -1458,7 +1436,6 @@ const App = {
 
     async rejectTradeOffer() {
         this.closeModal('respond-trade-modal');
-        this.log('Rejecting trade offer...');
 
         const response = await API.respondToTrade(
             this.currentGameId,
@@ -1468,7 +1445,6 @@ const App = {
 
         if (response.success) {
             this.handleGameResponse(response);
-            this.log('Trade rejected', 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
         }
@@ -1504,8 +1480,6 @@ const App = {
     },
 
     async doAcceptTrade(acceptedPlayerId) {
-        this.log(`Accepting trade from ${this.getPlayerName(acceptedPlayerId)}...`);
-
         const response = await API.acceptTrade(
             this.currentGameId,
             this.playingAsPlayerId,
@@ -1514,7 +1488,6 @@ const App = {
 
         if (response.success) {
             this.handleGameResponse(response);
-            this.log('Trade completed!', 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
         }
@@ -1545,8 +1518,6 @@ const App = {
     },
 
     async doSelectTarget(targetPlayerId) {
-        this.log(`Selecting ${this.getPlayerName(targetPlayerId)} as target...`);
-
         const response = await API.selectTarget(
             this.currentGameId,
             this.playingAsPlayerId,
@@ -1555,7 +1526,6 @@ const App = {
 
         if (response.success) {
             this.handleGameResponse(response);
-            this.log(`Stole from ${this.getPlayerName(targetPlayerId)}!`, 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
         }
@@ -1658,7 +1628,6 @@ const App = {
 
         let response;
         if (this.resourceModalType === 'YearOfPlenty') {
-            this.log('Playing Year of Plenty...');
             response = await API.playYearOfPlenty(
                 this.currentGameId,
                 this.resourceModalPlayerId,
@@ -1666,7 +1635,6 @@ const App = {
                 this.selectedResources[1]
             );
         } else if (this.resourceModalType === 'Monopoly') {
-            this.log('Playing Monopoly...');
             response = await API.playMonopoly(
                 this.currentGameId,
                 this.resourceModalPlayerId,
@@ -1676,7 +1644,6 @@ const App = {
 
         if (response?.success) {
             this.handleGameResponse(response);
-            this.log(`${this.resourceModalType} played`, 'success');
         } else {
             this.log(`Error: ${response?.errorMessage}`, 'error');
         }
@@ -1797,6 +1764,168 @@ const App = {
         }).join('');
 
         return `<div class="player-dev-cards">(${cardSpans})</div>`;
+    },
+
+    // ==================== EVENT RECORD DISPLAY ====================
+
+    formatResources(resources) {
+        if (!resources) return '';
+        const entries = Object.entries(resources).filter(([_, count]) => count > 0);
+        if (entries.length === 0) return '';
+
+        const parts = entries.map(([resource, count]) => `${count} ${resource}`);
+        if (parts.length === 1) return parts[0];
+        if (parts.length === 2) return `${parts[0]} and ${parts[1]}`;
+        return parts.slice(0, -1).join(', ') + ', and ' + parts[parts.length - 1];
+    },
+
+    formatEventRecord(event) {
+        const playerName = this.getPlayerName(event.playerId);
+        const targetName = event.targetPlayerId ? this.getPlayerName(event.targetPlayerId) : '';
+        const id = event.id;
+
+        switch (event.action) {
+            case 'RollDice':
+                return `${playerName} rolled ${event.diceRoll}. [${id}]`;
+
+            case 'PlaceFirstSettlement':
+                return `${playerName} placed first settlement at ${event.vertexId}. [${id}]`;
+
+            case 'PlaceSecondSettlement': {
+                let msg = `${playerName} placed second settlement at ${event.vertexId}`;
+                if (event.resourcesReceived) {
+                    msg += ` and received ${this.formatResources(event.resourcesReceived)}`;
+                }
+                return `${msg}. [${id}]`;
+            }
+
+            case 'PlaceSettlement':
+                return `${playerName} built a settlement at ${event.vertexId}. [${id}]`;
+
+            case 'UpgradeSettlement':
+                return `${playerName} upgraded to city at ${event.vertexId}. [${id}]`;
+
+            case 'PlaceRoad':
+                return `${playerName} built a road at ${event.edgeId}. [${id}]`;
+
+            case 'PlaceRobber':
+                return `${playerName} moved the robber to ${event.tileId}. [${id}]`;
+
+            case 'SelectTarget':
+                return `${playerName} selected ${targetName} as target. [${id}]`;
+
+            case 'StealResource': {
+                let msg = `${playerName} stole`;
+                if (event.resourcesReceived) {
+                    msg += ` ${this.formatResources(event.resourcesReceived)}`;
+                }
+                msg += ` from ${targetName}`;
+                return `${msg}. [${id}]`;
+            }
+
+            case 'DiscardCards': {
+                let msg = `${playerName} discarded`;
+                if (event.resourcesUsed) {
+                    msg += ` ${this.formatResources(event.resourcesUsed)}`;
+                }
+                return `${msg}. [${id}]`;
+            }
+
+            case 'BuyDevelopmentCard': {
+                let msg = `${playerName} bought a development card`;
+                if (event.developmentCard) {
+                    msg += ` (${event.developmentCard})`;
+                }
+                return `${msg}. [${id}]`;
+            }
+
+            case 'PlayKnight':
+                return `${playerName} played a Knight card on ${event.tileId}. [${id}]`;
+
+            case 'PlayMonopoly':
+            case 'PlayMonoploy': {  // Handle backend typo
+                let msg = `${playerName} played a Monopoly card`;
+                if (event.resourcesReceived) {
+                    msg += ` and took ${this.formatResources(event.resourcesReceived)}`;
+                }
+                return `${msg}. [${id}]`;
+            }
+
+            case 'PlayYearOfPlenty': {
+                let msg = `${playerName} played a Year of Plenty card`;
+                if (event.resourcesReceived) {
+                    msg += ` for ${this.formatResources(event.resourcesReceived)}`;
+                }
+                return `${msg}. [${id}]`;
+            }
+
+            case 'PlayRoadBuilding':
+                return `${playerName} played a Road Building card. [${id}]`;
+
+            case 'TradeWithBank': {
+                const gave = this.formatResources(event.resourcesUsed);
+                const got = this.formatResources(event.resourcesReceived);
+                return `${playerName} traded ${gave} for ${got} with bank. [${id}]`;
+            }
+
+            case 'OfferToTrade': {
+                const offering = this.formatResources(event.resourcesUsed);
+                const requesting = this.formatResources(event.resourcesReceived);
+                return `${playerName} offered ${offering} for ${requesting}. [${id}]`;
+            }
+
+            case 'AcceptTrade':
+                return `${playerName} accepted the trade. [${id}]`;
+
+            case 'RejectTrade':
+                return `${playerName} rejected all offers. [${id}]`;
+
+            case 'CounterOffer': {
+                const offering = this.formatResources(event.resourcesUsed);
+                const requesting = this.formatResources(event.resourcesReceived);
+                return `${playerName} countered with ${offering} for ${requesting}. [${id}]`;
+            }
+
+            case 'TradeWithPlayer': {
+                let msg = `${playerName} traded`;
+                if (event.resourcesUsed && event.resourcesReceived) {
+                    msg += ` ${this.formatResources(event.resourcesUsed)} for ${this.formatResources(event.resourcesReceived)}`;
+                }
+                if (targetName) {
+                    msg += ` with ${targetName}`;
+                }
+                return `${msg}. [${id}]`;
+            }
+
+            case 'ReceivedResources': {
+                const resources = this.formatResources(event.resourcesReceived);
+                return `${playerName} received ${resources}. [${id}]`;
+            }
+
+            default:
+                return `${playerName} performed ${event.action}. [${id}]`;
+        }
+    },
+
+    renderEventLog() {
+        const container = document.getElementById('status-log');
+        container.innerHTML = '';
+
+        const eventRecord = this.currentGame?.eventRecord;
+        if (!eventRecord || eventRecord.length === 0) return;
+
+        // Get last 20 events in chronological order (oldest first, newest last)
+        const recentEvents = eventRecord.slice(-20);
+
+        recentEvents.forEach(event => {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = this.formatEventRecord(event);
+            container.appendChild(entry);
+        });
+
+        // Scroll to bottom to show newest event
+        container.scrollTop = container.scrollHeight;
     },
 
     log(message, type = '') {
