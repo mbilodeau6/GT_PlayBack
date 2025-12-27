@@ -39,8 +39,6 @@ const App = {
 
         // Load auto-refresh setting from session (defaults to false)
         this.autoRefreshEnabled = this.loadAutoRefreshSetting();
-
-        this.log('Application initialized');
     },
 
     bindEventHandlers() {
@@ -120,7 +118,6 @@ const App = {
         API.configure(url, key);
 
         this.closeSettings();
-        this.log('Settings saved', 'success');
     },
 
     setAutoRefreshEnabled(enabled) {
@@ -211,7 +208,6 @@ const App = {
 
     async createNewGame() {
         const gameType = document.getElementById('menu-game-type-select').value;
-        this.log(`Creating new ${gameType} game...`);
 
         const response = await API.createGame(gameType);
         if (response.success) {
@@ -219,7 +215,6 @@ const App = {
             this.saveGameId(response.gameState.id);
             this.populateMenuPlayerDropdown();
             this.updateGameMenuUI();
-            this.log(`Game created: ${response.gameState.id}`, 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
         }
@@ -232,14 +227,12 @@ const App = {
             return;
         }
 
-        this.log(`Loading game ${gameId}...`);
         const response = await API.getGame(gameId);
         if (response.success) {
             this.handleGameResponse(response);
             this.saveGameId(gameId);
             this.populateMenuPlayerDropdown();
             this.updateGameMenuUI();
-            this.log('Game loaded', 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
         }
@@ -251,11 +244,9 @@ const App = {
             return;
         }
 
-        this.log('Refreshing game state...');
         const response = await API.getGame(this.currentGameId);
         if (response.success) {
             this.handleGameResponse(response);
-            this.log('Game state refreshed', 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
         }
@@ -572,7 +563,6 @@ const App = {
             return;
         }
 
-        this.log(`Adding player ${name}...`);
         const response = await API.addPlayer(this.currentGameId, name, isBot, color || null);
 
         if (response.success) {
@@ -580,7 +570,6 @@ const App = {
             document.getElementById('menu-player-name-input').value = '';
             this.populateMenuPlayerDropdown();
             this.updateGameMenuUI();
-            this.log(`Player ${name} added`, 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
         }
@@ -589,14 +578,12 @@ const App = {
     async removePlayer(playerId) {
         if (!this.currentGameId) return;
 
-        this.log(`Removing player ${playerId}...`);
         const response = await API.removePlayer(this.currentGameId, playerId);
 
         if (response.success) {
             this.handleGameResponse(response);
             this.populateMenuPlayerDropdown();
             this.updateGameMenuUI();
-            this.log('Player removed', 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
         }
@@ -605,13 +592,11 @@ const App = {
     async startGame() {
         if (!this.currentGameId) return;
 
-        this.log('Starting game...');
         const response = await API.startGame(this.currentGameId);
 
         if (response.success) {
             this.handleGameResponse(response);
             this.closeModal('game-menu-modal');
-            this.log('Game started!', 'success');
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
         }
@@ -849,8 +834,6 @@ const App = {
 
         // Update board to show selectable elements
         Board.setSelectableElements(mode, ids);
-
-        this.log(`Select a ${mode} for ${actionType}`);
     },
 
     cancelSelection() {
@@ -861,8 +844,6 @@ const App = {
 
         document.getElementById('selection-info').classList.add('hidden');
         Board.clearSelectableElements();
-
-        this.log('Selection cancelled');
     },
 
     async handleBoardClick(type, id) {

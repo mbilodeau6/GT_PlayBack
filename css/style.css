@@ -507,13 +507,16 @@ select:focus {
 
 /* Status Log */
 #status-log {
-    max-height: 150px;
+    min-height: 100px;
+    max-height: 400px;
+    height: 150px;
     overflow-y: auto;
     font-size: 0.8rem;
     color: #888;
     background-color: #0a1628;
     padding: 0.5rem;
     border-radius: 6px;
+    resize: vertical;
 }
 
 .log-entry {
