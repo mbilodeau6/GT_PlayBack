@@ -653,6 +653,12 @@ const App = {
             return isMyTurn; // Other actions only for current player
         }) || [];
 
+        // Sort actions so Undo is second-to-last and EndTurn is last
+        actionsToShow.sort((a, b) => {
+            const order = { 'EndTurn': 2, 'Undo': 1 };
+            return (order[a.action] || 0) - (order[b.action] || 0);
+        });
+
         // Render action buttons
         actionsToShow.forEach(action => {
             const btn = document.createElement('button');
@@ -771,6 +777,12 @@ const App = {
                     btn.onclick = () => this.showSelectTargetModal(action.playerIds);
                     break;
 
+                case 'Undo':
+                    btn.textContent = 'Undo';
+                    btn.classList.add('secondary');
+                    btn.onclick = () => this.doUndo(action.eventId);
+                    break;
+
                 default:
                     btn.textContent = action.action;
                     btn.disabled = true;
@@ -796,9 +808,11 @@ const App = {
 
         // Auto-trigger actions when there's only one mandatory action available
         // This skips the button click for actions the player must perform
+        // Filter out Undo from the count since it's optional and shouldn't prevent auto-trigger
         const discardModalOpen = !document.getElementById('discard-modal').classList.contains('hidden');
-        if (isMyTurn && actionsToShow.length === 1 && !this.selectionMode && !discardModalOpen) {
-            const action = actionsToShow[0];
+        const actionsWithoutUndo = actionsToShow.filter(a => a.action !== 'Undo');
+        if (isMyTurn && actionsWithoutUndo.length === 1 && !this.selectionMode && !discardModalOpen) {
+            const action = actionsWithoutUndo[0];
             const playerId = this.currentGame.phase.currentPlayerId;
 
             if (action.action === 'PlaceSettlement' && action.vertexIds?.length > 0) {
@@ -916,6 +930,16 @@ const App = {
 
     async doPlayRoadBuilding(playerId) {
         const response = await API.playRoadBuilding(this.currentGameId, playerId);
+
+        if (response.success) {
+            this.handleGameResponse(response);
+        } else {
+            this.log(`Error: ${response.errorMessage}`, 'error');
+        }
+    },
+
+    async doUndo(eventId) {
+        const response = await API.undo(this.currentGameId, this.playingAsPlayerId, eventId);
 
         if (response.success) {
             this.handleGameResponse(response);

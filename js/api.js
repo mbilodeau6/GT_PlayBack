@@ -220,6 +220,15 @@ const API = {
         return this.playDevCard(gameId, playerId, 'Monopoly', {
             selectedResources: [resource]
         });
+    },
+
+    // ==================== UNDO ====================
+
+    async undo(gameId, playerId, eventId) {
+        return this.request('POST', `/api/Games/${gameId}/undo`, {
+            playerId,
+            eventId
+        });
     }
 };
 
