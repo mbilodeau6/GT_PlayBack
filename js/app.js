@@ -942,6 +942,8 @@ const App = {
         const response = await API.undo(this.currentGameId, this.playingAsPlayerId, eventId);
 
         if (response.success) {
+            // Clear any pending selection so the new game state can auto-trigger the correct action
+            this.cancelSelection();
             this.handleGameResponse(response);
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
@@ -1938,12 +1940,15 @@ const App = {
         const entry = document.createElement('div');
         entry.className = `log-entry ${type}`;
         entry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
-        container.insertBefore(entry, container.firstChild);
+        container.appendChild(entry);
 
-        // Keep only last 50 entries
+        // Keep only last 50 entries (remove oldest from top)
         while (container.children.length > 50) {
-            container.removeChild(container.lastChild);
+            container.removeChild(container.firstChild);
         }
+
+        // Scroll to bottom to show newest message
+        container.scrollTop = container.scrollHeight;
 
         console.log(`[${type || 'info'}] ${message}`);
     }
