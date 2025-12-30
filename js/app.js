@@ -753,7 +753,9 @@ const App = {
                     break;
 
                 case 'BuyDevelopmentCard':
-                    btn.textContent = 'Buy Dev Card';
+                    btn.innerHTML = '<i class="fa-solid fa-scroll"></i>';
+                    btn.title = 'Buy Dev Card';
+                    btn.classList.add('icon-btn');
                     btn.onclick = () => this.doBuyDevCard(this.currentGame.phase.currentPlayerId);
                     break;
 
@@ -772,22 +774,30 @@ const App = {
                     break;
 
                 case 'PlayKnight':
-                    btn.textContent = 'Play Knight';
+                    btn.innerHTML = '<i class="fa-solid fa-chess-knight"></i>';
+                    btn.title = 'Play Knight';
+                    btn.classList.add('icon-btn');
                     btn.onclick = () => this.startSelection('tile', action.tileIds, this.currentGame.phase.currentPlayerId, 'PlayKnight');
                     break;
 
                 case 'PlayRoadBuilding':
-                    btn.textContent = 'Play Road Building';
+                    btn.innerHTML = '<i class="fa-solid fa-road"></i>';
+                    btn.title = 'Play Road Building';
+                    btn.classList.add('icon-btn');
                     btn.onclick = () => this.doPlayRoadBuilding(this.currentGame.phase.currentPlayerId);
                     break;
 
                 case 'PlayYearOfPlenty':
-                    btn.textContent = 'Play Year of Plenty';
+                    btn.innerHTML = '<i class="fa-solid fa-gift"></i>';
+                    btn.title = 'Play Year of Plenty';
+                    btn.classList.add('icon-btn');
                     btn.onclick = () => this.showYearOfPlentyModal(this.currentGame.phase.currentPlayerId);
                     break;
 
                 case 'PlayMonopoly':
-                    btn.textContent = 'Play Monopoly';
+                    btn.innerHTML = '<i class="fa-solid fa-hand-holding-dollar"></i>';
+                    btn.title = 'Play Monopoly';
+                    btn.classList.add('icon-btn');
                     btn.onclick = () => this.showMonopolyModal(this.currentGame.phase.currentPlayerId);
                     break;
 
