@@ -788,8 +788,9 @@ const App = {
                     break;
 
                 case 'EndTurn':
-                    btn.textContent = 'End Turn';
-                    btn.classList.add('secondary');
+                    btn.innerHTML = '&#9193;';
+                    btn.title = 'End Turn';
+                    btn.classList.add('secondary', 'icon-btn');
                     btn.onclick = () => this.doEndTurn(this.currentGame.phase.currentPlayerId);
                     break;
 
@@ -825,8 +826,9 @@ const App = {
                     break;
 
                 case 'Undo':
-                    btn.textContent = 'Undo';
-                    btn.classList.add('secondary');
+                    btn.innerHTML = '&#9194;';
+                    btn.title = 'Undo';
+                    btn.classList.add('secondary', 'icon-btn');
                     btn.onclick = () => this.doUndo(action.eventId);
                     break;
 
