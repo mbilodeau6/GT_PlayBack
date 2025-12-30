@@ -43,6 +43,9 @@ const App = {
 
         // Load auto-refresh setting from session (defaults to false)
         this.autoRefreshEnabled = this.loadAutoRefreshSetting();
+
+        // Load saved sound volume
+        Sounds.loadVolume();
     },
 
     bindEventHandlers() {
@@ -59,6 +62,10 @@ const App = {
         document.getElementById('btn-settings').addEventListener('click', () => this.openSettings());
         document.getElementById('btn-save-settings').addEventListener('click', () => this.saveSettings());
         document.getElementById('btn-cancel-settings').addEventListener('click', () => this.closeSettings());
+
+        // Volume control
+        document.getElementById('volume-slider').addEventListener('input', (e) => this.onVolumeChange(e.target.value));
+        document.getElementById('btn-test-sound').addEventListener('click', () => Sounds.playYourTurn());
 
         // Game menu modal
         document.getElementById('btn-game-menu').addEventListener('click', () => this.openGameMenu());
@@ -113,6 +120,12 @@ const App = {
     openSettings() {
         document.getElementById('api-url-input').value = API.baseUrl;
         document.getElementById('api-key-input').value = API.apiKey;
+
+        // Load volume setting
+        const volume = Math.round(Sounds.getVolume() * 100);
+        document.getElementById('volume-slider').value = volume;
+        document.getElementById('volume-value').textContent = `${volume}%`;
+
         document.getElementById('settings-modal').classList.remove('hidden');
     },
 
@@ -122,6 +135,12 @@ const App = {
         API.configure(url, key);
 
         this.closeSettings();
+    },
+
+    onVolumeChange(value) {
+        const volume = parseInt(value) / 100;
+        Sounds.setVolume(volume);
+        document.getElementById('volume-value').textContent = `${value}%`;
     },
 
     setAutoRefreshEnabled(enabled) {

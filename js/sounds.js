@@ -5,6 +5,7 @@
 
 const Sounds = {
     audioContext: null,
+    masterVolume: 0.5, // 0.0 to 1.0
 
     // Initialize audio context (must be called after user interaction)
     init() {
@@ -17,8 +18,29 @@ const Sounds = {
         }
     },
 
+    // Set master volume (0.0 to 1.0)
+    setVolume(level) {
+        this.masterVolume = Math.max(0, Math.min(1, level));
+        localStorage.setItem('catan_sound_volume', this.masterVolume.toString());
+    },
+
+    // Get current volume
+    getVolume() {
+        return this.masterVolume;
+    },
+
+    // Load saved volume from localStorage
+    loadVolume() {
+        const saved = localStorage.getItem('catan_sound_volume');
+        if (saved !== null) {
+            this.masterVolume = parseFloat(saved);
+        }
+    },
+
     // Play a simple tone
     playTone(frequency, duration, type = 'sine', volume = 0.3) {
+        if (this.masterVolume === 0) return; // Skip if muted
+
         this.init();
         const ctx = this.audioContext;
 
@@ -31,10 +53,13 @@ const Sounds = {
         oscillator.type = type;
         oscillator.frequency.setValueAtTime(frequency, ctx.currentTime);
 
+        // Apply master volume to the note's volume
+        const adjustedVolume = volume * this.masterVolume;
+
         // Envelope: quick attack, sustain, then fade out
         gainNode.gain.setValueAtTime(0, ctx.currentTime);
-        gainNode.gain.linearRampToValueAtTime(volume, ctx.currentTime + 0.05);
-        gainNode.gain.linearRampToValueAtTime(volume * 0.7, ctx.currentTime + duration * 0.7);
+        gainNode.gain.linearRampToValueAtTime(adjustedVolume, ctx.currentTime + 0.05);
+        gainNode.gain.linearRampToValueAtTime(adjustedVolume * 0.7, ctx.currentTime + duration * 0.7);
         gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + duration);
 
         oscillator.start(ctx.currentTime);
