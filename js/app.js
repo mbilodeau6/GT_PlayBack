@@ -268,6 +268,9 @@ const App = {
     // ==================== PLAYER SELECTION ====================
 
     onPlayingAsChanged(playerId) {
+        // Cancel any active selection when switching players
+        this.cancelSelection();
+
         this.playingAsPlayerId = playerId;
         this.savePlayingAsPlayer(playerId);
         this.updateHeaderPlayingAs();
@@ -1908,6 +1911,9 @@ const App = {
                 const resources = this.formatResources(event.resourcesReceived);
                 return `${playerName} received ${resources}. [${id}]`;
             }
+
+            case 'Undo':
+                return `${playerName} undid action ${event.eventReversed}. [${id}]`;
 
             default:
                 return `${playerName} performed ${event.action}. [${id}]`;
