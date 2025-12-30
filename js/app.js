@@ -732,7 +732,7 @@ const App = {
 
             switch (action.action) {
                 case 'RollDice':
-                    btn.innerHTML = '&#127922;';
+                    btn.innerHTML = '<i class="fa-solid fa-dice"></i>';
                     btn.title = 'Roll Dice';
                     btn.classList.add('highlight', 'icon-btn');
                     btn.onclick = () => this.doRollDice(this.currentGame.phase.currentPlayerId);
@@ -758,12 +758,16 @@ const App = {
                     break;
 
                 case 'TradeWithBank':
-                    btn.textContent = 'Bank Trade';
+                    btn.innerHTML = '<i class="fa-solid fa-building-columns"></i>';
+                    btn.title = 'Trade with Bank';
+                    btn.classList.add('icon-btn');
                     btn.onclick = () => this.showTradeModal(action);
                     break;
 
                 case 'TradeWithPlayers':
-                    btn.textContent = 'Trade with Players';
+                    btn.innerHTML = '<i class="fa-solid fa-handshake"></i>';
+                    btn.title = 'Trade with Players';
+                    btn.classList.add('icon-btn');
                     btn.onclick = () => this.showPlayerTradeModal();
                     break;
 
@@ -788,7 +792,7 @@ const App = {
                     break;
 
                 case 'EndTurn':
-                    btn.innerHTML = '&#9193;';
+                    btn.innerHTML = '<i class="fa-solid fa-forward-step"></i>';
                     btn.title = 'End Turn';
                     btn.classList.add('secondary', 'icon-btn');
                     btn.onclick = () => this.doEndTurn(this.currentGame.phase.currentPlayerId);
@@ -826,7 +830,7 @@ const App = {
                     break;
 
                 case 'Undo':
-                    btn.innerHTML = '&#9194;';
+                    btn.innerHTML = '<i class="fa-solid fa-rotate-left"></i>';
                     btn.title = 'Undo';
                     btn.classList.add('secondary', 'icon-btn');
                     btn.onclick = () => this.doUndo(action.eventId);
