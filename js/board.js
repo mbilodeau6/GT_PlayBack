@@ -660,6 +660,77 @@ const Board = {
         }
     },
 
+    // Show multiple placement types simultaneously (for auto-show mode)
+    setSelectableElementsMultiple(options) {
+        this.clearSelectableElements();
+
+        const { vertices, edges, tiles, upgradeVertices } = options;
+
+        // Settlement placement - use existing vertex placeholders
+        if (vertices && vertices.length > 0) {
+            vertices.forEach(id => {
+                this.svg.querySelectorAll(`[data-vertex-id="${id}"]`).forEach(el => {
+                    el.classList.add('selectable');
+                });
+            });
+        }
+
+        // Road placement - use existing edge placeholders
+        if (edges && edges.length > 0) {
+            edges.forEach(id => {
+                this.svg.querySelectorAll(`[data-edge-id="${id}"]`).forEach(el => {
+                    el.classList.add('selectable');
+                });
+            });
+        }
+
+        // Upgrade settlement - create overlay circles
+        if (upgradeVertices && upgradeVertices.length > 0) {
+            upgradeVertices.forEach(id => {
+                const pos = this.vertexPositions.get(id);
+                if (!pos) return;
+
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', pos.x);
+                circle.setAttribute('cy', pos.y);
+                circle.setAttribute('r', 12);
+                circle.setAttribute('class', 'upgrade-placeholder selectable');
+                circle.setAttribute('data-vertex-id', id);
+
+                circle.addEventListener('click', () => {
+                    if (this.onVertexClick) {
+                        this.onVertexClick(id);
+                    }
+                });
+
+                this.layers.robber.appendChild(circle);
+            });
+        }
+
+        // Robber placement - create circles at robber positions
+        if (tiles && tiles.length > 0) {
+            tiles.forEach(id => {
+                const pos = this.tilePositions.get(id);
+                if (!pos) return;
+
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', pos.x + 25);
+                circle.setAttribute('cy', pos.y + 20);
+                circle.setAttribute('r', 15);
+                circle.setAttribute('class', 'robber-placeholder selectable');
+                circle.setAttribute('data-tile-id', id);
+
+                circle.addEventListener('click', () => {
+                    if (this.onTileClick) {
+                        this.onTileClick(id);
+                    }
+                });
+
+                this.layers.robber.appendChild(circle);
+            });
+        }
+    },
+
     clearSelectableElements() {
         this.svg.querySelectorAll('.selectable').forEach(el => {
             el.classList.remove('selectable');

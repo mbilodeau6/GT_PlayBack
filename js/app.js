@@ -434,7 +434,8 @@ const App = {
         // Render board
         Board.render(game);
 
-        // Re-apply selectable elements if in selection mode (board render clears them)
+        // Re-apply selectable elements if in manual selection mode (board render clears them)
+        // Auto-show indicators are re-applied in renderActions() via showPlacementIndicators()
         if (this.selectionMode && this.selectableIds?.length > 0) {
             Board.setSelectableElements(this.selectionMode, this.selectableIds, this.pendingAction);
         }
@@ -638,6 +639,10 @@ const App = {
             waitingMessage.textContent = `Waiting on ${currentPlayerName}`;
             waitingMessage.classList.remove('hidden');
             container.innerHTML = '';
+            // Clear any placement indicators when not our turn
+            this.availablePlacementActions = null;
+            Board.clearSelectableElements();
+            document.getElementById('selection-info').classList.add('hidden');
             return;
         } else {
             waitingMessage.classList.add('hidden');
@@ -656,14 +661,32 @@ const App = {
             return isMyTurn; // Other actions only for current player
         }) || [];
 
-        // Sort actions so Undo is second-to-last and EndTurn is last
-        actionsToShow.sort((a, b) => {
+        // Separate placement actions (auto-shown on board) from button actions
+        const placementActionTypes = ['PlaceSettlement', 'PlaceRoad', 'UpgradeSettlement', 'PlaceRobber'];
+        const placementActions = actionsToShow.filter(a => placementActionTypes.includes(a.action));
+        const buttonActions = actionsToShow.filter(a => !placementActionTypes.includes(a.action));
+
+        // Store placement actions for handleBoardClick to use
+        this.availablePlacementActions = placementActions;
+
+        // Auto-show placement indicators on the board
+        if (isMyTurn && placementActions.length > 0) {
+            this.showPlacementIndicators(placementActions, buttonActions);
+        } else {
+            // Clear any existing placement indicators and hide selection info
+            this.availablePlacementActions = null;
+            Board.clearSelectableElements();
+            document.getElementById('selection-info').classList.add('hidden');
+        }
+
+        // Sort button actions so Undo is second-to-last and EndTurn is last
+        buttonActions.sort((a, b) => {
             const order = { 'EndTurn': 2, 'Undo': 1 };
             return (order[a.action] || 0) - (order[b.action] || 0);
         });
 
-        // Render action buttons
-        actionsToShow.forEach(action => {
+        // Render action buttons (excluding placement actions)
+        buttonActions.forEach(action => {
             const btn = document.createElement('button');
             btn.className = 'action-btn';
 
@@ -672,26 +695,6 @@ const App = {
                     btn.textContent = 'Roll Dice';
                     btn.classList.add('highlight');
                     btn.onclick = () => this.doRollDice(this.currentGame.phase.currentPlayerId);
-                    break;
-
-                case 'PlaceSettlement':
-                    btn.textContent = `Place Settlement (${action.vertexIds?.length || 0} spots)`;
-                    btn.onclick = () => this.startSelection('vertex', action.vertexIds, this.currentGame.phase.currentPlayerId, 'PlaceSettlement');
-                    break;
-
-                case 'PlaceRoad':
-                    btn.textContent = `Place Road (${action.edgeIds?.length || 0} spots)`;
-                    btn.onclick = () => this.startSelection('edge', action.edgeIds, this.currentGame.phase.currentPlayerId, 'PlaceRoad');
-                    break;
-
-                case 'UpgradeSettlement':
-                    btn.textContent = `Upgrade to City (${action.vertexIds?.length || 0})`;
-                    btn.onclick = () => this.startSelection('vertex', action.vertexIds, this.currentGame.phase.currentPlayerId, 'UpgradeSettlement');
-                    break;
-
-                case 'PlaceRobber':
-                    btn.textContent = `Place Robber (${action.tileIds?.length || 0} tiles)`;
-                    btn.onclick = () => this.startSelection('tile', action.tileIds, this.currentGame.phase.currentPlayerId, 'PlaceRobber');
                     break;
 
                 case 'StealResource':
@@ -809,26 +812,90 @@ const App = {
             container.innerHTML = '<div class="log-entry">No actions available</div>';
         }
 
-        // Auto-trigger actions when there's only one mandatory action available
-        // This skips the button click for actions the player must perform
-        // Filter out Undo from the count since it's optional and shouldn't prevent auto-trigger
+        // Auto-trigger DiscardCards modal when it's the only mandatory action
+        // (Placement actions are now auto-shown on the board, so we only need this for modals)
         const discardModalOpen = !document.getElementById('discard-modal').classList.contains('hidden');
-        const actionsWithoutUndo = actionsToShow.filter(a => a.action !== 'Undo');
-        if (isMyTurn && actionsWithoutUndo.length === 1 && !this.selectionMode && !discardModalOpen) {
-            const action = actionsWithoutUndo[0];
-            const playerId = this.currentGame.phase.currentPlayerId;
-
-            if (action.action === 'PlaceSettlement' && action.vertexIds?.length > 0) {
-                this.startSelection('vertex', action.vertexIds, playerId, 'PlaceSettlement');
-            } else if (action.action === 'PlaceRoad' && action.edgeIds?.length > 0) {
-                this.startSelection('edge', action.edgeIds, playerId, 'PlaceRoad');
-            } else if (action.action === 'PlaceRobber' && action.tileIds?.length > 0) {
-                this.startSelection('tile', action.tileIds, playerId, 'PlaceRobber');
-            } else if (action.action === 'DiscardCards') {
+        if (isMyTurn && !discardModalOpen) {
+            const discardAction = actionsToShow.find(a => a.action === 'DiscardCards');
+            if (discardAction) {
+                const playerId = this.currentGame.phase.currentPlayerId;
                 const player = this.currentGame.players.find(p => p.id === playerId);
                 const discardCount = player ? Math.floor(player.resourceCount / 2) : 0;
-                this.showDiscardModal({ ...action, count: discardCount });
+                this.showDiscardModal({ ...discardAction, count: discardCount });
             }
+        }
+    },
+
+    // ==================== PLACEMENT INDICATORS ====================
+
+    showPlacementIndicators(placementActions, buttonActions) {
+        const playerId = this.currentGame.phase.currentPlayerId;
+
+        // Collect all selectable IDs for each type
+        const vertexIds = [];
+        const edgeIds = [];
+        const tileIds = [];
+        const upgradeVertexIds = [];
+
+        placementActions.forEach(action => {
+            switch (action.action) {
+                case 'PlaceSettlement':
+                    if (action.vertexIds) vertexIds.push(...action.vertexIds);
+                    break;
+                case 'PlaceRoad':
+                    if (action.edgeIds) edgeIds.push(...action.edgeIds);
+                    break;
+                case 'UpgradeSettlement':
+                    if (action.vertexIds) upgradeVertexIds.push(...action.vertexIds);
+                    break;
+                case 'PlaceRobber':
+                    if (action.tileIds) tileIds.push(...action.tileIds);
+                    break;
+            }
+        });
+
+        // Show all indicators on the board
+        Board.setSelectableElementsMultiple({
+            vertices: vertexIds,
+            edges: edgeIds,
+            tiles: tileIds,
+            upgradeVertices: upgradeVertexIds
+        });
+
+        // Store the player ID for when clicks happen
+        this.selectedPlayerId = playerId;
+
+        // Determine info bar message
+        // Count non-auxiliary button actions (exclude Undo, EndTurn)
+        const auxiliaryActions = ['Undo', 'EndTurn'];
+        const mainButtonActions = buttonActions.filter(a => !auxiliaryActions.includes(a.action));
+
+        // If exactly one placement action type and no main button actions, show specific message
+        if (placementActions.length === 1 && mainButtonActions.length === 0) {
+            const action = placementActions[0];
+            let message = '';
+            switch (action.action) {
+                case 'PlaceSettlement':
+                    message = 'Select location for settlement';
+                    break;
+                case 'PlaceRoad':
+                    message = 'Select location for road';
+                    break;
+                case 'UpgradeSettlement':
+                    message = 'Select settlement to upgrade';
+                    break;
+                case 'PlaceRobber':
+                    message = 'Select tile for robber';
+                    break;
+            }
+            document.getElementById('selection-info').classList.remove('hidden');
+            document.getElementById('selection-type').textContent = message;
+            document.getElementById('btn-cancel-selection').classList.add('hidden');
+        } else {
+            // Multiple options available - show generic message
+            document.getElementById('selection-info').classList.remove('hidden');
+            document.getElementById('selection-type').textContent = 'Select an action on the board';
+            document.getElementById('btn-cancel-selection').classList.add('hidden');
         }
     },
 
@@ -845,9 +912,10 @@ const App = {
         this.selectedPlayerId = playerId;
         this.pendingAction = actionType;
 
-        // Show selection info
+        // Show selection info with cancel button (for manual button-triggered selections)
         document.getElementById('selection-info').classList.remove('hidden');
         document.getElementById('selection-type').textContent = `${actionType} - click a ${mode}`;
+        document.getElementById('btn-cancel-selection').classList.remove('hidden');
 
         // Update board to show selectable elements
         Board.setSelectableElements(mode, ids, actionType);
@@ -858,20 +926,33 @@ const App = {
         this.selectableIds = [];
         this.selectedPlayerId = null;
         this.pendingAction = null;
+        this.availablePlacementActions = null;
 
         document.getElementById('selection-info').classList.add('hidden');
         Board.clearSelectableElements();
     },
 
     async handleBoardClick(type, id) {
-        console.log('handleBoardClick:', type, id, 'selectionMode:', this.selectionMode, 'selectableIds:', this.selectableIds);
-        if (this.selectionMode !== type) return;
-        if (!this.selectableIds.includes(id)) return;
+        console.log('handleBoardClick:', type, id, 'selectionMode:', this.selectionMode, 'pendingAction:', this.pendingAction);
 
-        const playerId = this.selectedPlayerId;
-        const action = this.pendingAction;
+        let action = null;
+        let playerId = this.selectedPlayerId;
 
-        this.cancelSelection();
+        // Check if we're in manual selection mode (for PlayKnight button)
+        if (this.selectionMode) {
+            if (this.selectionMode !== type) return;
+            if (!this.selectableIds.includes(id)) return;
+            action = this.pendingAction;
+            this.cancelSelection();
+        } else {
+            // Auto-show mode: determine action from what was clicked
+            action = this.findPlacementActionForClick(type, id);
+            if (!action) return;
+
+            // Clear indicators after click
+            Board.clearSelectableElements();
+            document.getElementById('selection-info').classList.add('hidden');
+        }
 
         let response;
         switch (action) {
@@ -897,6 +978,37 @@ const App = {
         } else {
             this.log(`Error: ${response?.errorMessage}`, 'error');
         }
+    },
+
+    // Find which placement action corresponds to a click on a specific element
+    findPlacementActionForClick(type, id) {
+        if (!this.availablePlacementActions) return null;
+
+        for (const action of this.availablePlacementActions) {
+            switch (action.action) {
+                case 'PlaceSettlement':
+                    if (type === 'vertex' && action.vertexIds?.includes(id)) {
+                        return 'PlaceSettlement';
+                    }
+                    break;
+                case 'PlaceRoad':
+                    if (type === 'edge' && action.edgeIds?.includes(id)) {
+                        return 'PlaceRoad';
+                    }
+                    break;
+                case 'UpgradeSettlement':
+                    if (type === 'vertex' && action.vertexIds?.includes(id)) {
+                        return 'UpgradeSettlement';
+                    }
+                    break;
+                case 'PlaceRobber':
+                    if (type === 'tile' && action.tileIds?.includes(id)) {
+                        return 'PlaceRobber';
+                    }
+                    break;
+            }
+        }
+        return null;
     },
 
     // ==================== GAME ACTIONS ====================
