@@ -732,8 +732,9 @@ const App = {
 
             switch (action.action) {
                 case 'RollDice':
-                    btn.textContent = 'Roll Dice';
-                    btn.classList.add('highlight');
+                    btn.innerHTML = '&#127922;';
+                    btn.title = 'Roll Dice';
+                    btn.classList.add('highlight', 'icon-btn');
                     btn.onclick = () => this.doRollDice(this.currentGame.phase.currentPlayerId);
                     break;
 

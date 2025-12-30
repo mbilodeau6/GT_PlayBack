@@ -501,6 +501,13 @@ select:focus {
     padding: 0.6rem 0.8rem;
 }
 
+.action-btn.icon-btn {
+    font-size: 1.5rem;
+    text-align: center;
+    padding: 0.3rem 0.8rem;
+    line-height: 1;
+}
+
 .action-btn.highlight {
     background-color: #2ecc71;
 }
