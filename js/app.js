@@ -649,15 +649,19 @@ const App = {
     // ==================== ACTIONS ====================
 
     renderActions() {
-        const container = document.getElementById('actions-list');
+        const row1 = document.getElementById('action-row-1');
+        const row2 = document.getElementById('action-row-2');
+        const situationalContainer = document.getElementById('situational-actions');
         const waitingMessage = document.getElementById('waiting-message');
-        container.innerHTML = '';
+
+        row1.innerHTML = '';
+        row2.innerHTML = '';
+        situationalContainer.innerHTML = '';
 
         // Check if there's a RespondToTrade action (any player can respond)
         const hasRespondToTrade = this.possibleActions?.some(a => a.action === 'RespondToTrade');
 
         // Check if game is in trading phase and there's an active trade
-        // Non-current players should be able to respond to trades
         const isInTradingPhase = this.currentGame?.phase?.phaseState === 'RespondToTrade';
 
         // Find the original trade to determine who initiated it
@@ -670,81 +674,166 @@ const App = {
                                    this.playingAsPlayerId &&
                                    this.playingAsPlayerId !== tradeInitiatorId;
 
-        // Check if it's the selected player's turn (or if RespondToTrade is available)
+        // Check if it's the selected player's turn
         const isMyTurn = this.isMyTurn();
 
+        // Show/hide waiting message
         if (!isMyTurn && !hasRespondToTrade && !canRespondToTrade) {
-            // Show waiting message
             const currentPlayerName = this.getPlayerName(this.currentGame?.phase?.currentPlayerId);
             waitingMessage.textContent = `Waiting on ${currentPlayerName}`;
             waitingMessage.classList.remove('hidden');
-            container.innerHTML = '';
-            // Clear any placement indicators when not our turn
             this.availablePlacementActions = null;
             Board.clearSelectableElements();
             document.getElementById('selection-info').classList.add('hidden');
-            return;
         } else {
             waitingMessage.classList.add('hidden');
         }
 
-        if ((!this.possibleActions || this.possibleActions.length === 0) && !canRespondToTrade) {
-            container.innerHTML = '<div class="log-entry">No actions available</div>';
-            return;
-        }
+        // Build map of available actions for quick lookup
+        const availableActions = {};
+        (this.possibleActions || []).forEach(action => {
+            availableActions[action.action] = action;
+        });
 
-        // Filter actions - show RespondToTrade for everyone, other actions only for current player
-        const actionsToShow = this.possibleActions?.filter(action => {
-            if (action.action === 'RespondToTrade') {
-                return true; // Anyone can respond to trade
-            }
-            return isMyTurn; // Other actions only for current player
-        }) || [];
-
-        // Separate placement actions (auto-shown on board) from button actions
+        // Handle placement actions (auto-shown on board)
         const placementActionTypes = ['PlaceSettlement', 'PlaceRoad', 'UpgradeSettlement', 'PlaceRobber'];
-        const placementActions = actionsToShow.filter(a => placementActionTypes.includes(a.action));
-        const buttonActions = actionsToShow.filter(a => !placementActionTypes.includes(a.action));
-
-        // Store placement actions for handleBoardClick to use
+        const placementActions = (this.possibleActions || []).filter(a => placementActionTypes.includes(a.action));
         this.availablePlacementActions = placementActions;
 
-        // Auto-show placement indicators on the board
         if (isMyTurn && placementActions.length > 0) {
+            const buttonActions = (this.possibleActions || []).filter(a => !placementActionTypes.includes(a.action));
             this.showPlacementIndicators(placementActions, buttonActions);
-        } else {
-            // Clear any existing placement indicators and hide selection info
+        } else if (!isMyTurn || placementActions.length === 0) {
             this.availablePlacementActions = null;
             Board.clearSelectableElements();
             document.getElementById('selection-info').classList.add('hidden');
         }
 
-        // Sort button actions so Undo is second-to-last and EndTurn is last
-        buttonActions.sort((a, b) => {
-            const order = { 'EndTurn': 2, 'Undo': 1 };
-            return (order[a.action] || 0) - (order[b.action] || 0);
+        // Define fixed buttons for Row 1: Roll, Buy Dev Card, Trade w Bank, Trade w Players, Undo, End Turn
+        const row1Buttons = [
+            {
+                action: 'RollDice',
+                icon: 'fa-solid fa-dice',
+                title: 'Roll Dice',
+                highlightWhenEnabled: true,
+                handler: () => this.doRollDice(this.currentGame.phase.currentPlayerId)
+            },
+            {
+                action: 'BuyDevelopmentCard',
+                icon: 'fa-solid fa-scroll',
+                title: 'Buy Dev Card',
+                handler: () => this.doBuyDevCard(this.currentGame.phase.currentPlayerId)
+            },
+            {
+                action: 'TradeWithBank',
+                icon: 'fa-solid fa-building-columns',
+                title: 'Trade with Bank',
+                handler: () => this.showTradeModal(availableActions['TradeWithBank'])
+            },
+            {
+                action: 'TradeWithPlayers',
+                icon: 'fa-solid fa-handshake',
+                title: 'Trade with Players',
+                handler: () => this.showPlayerTradeModal()
+            },
+            {
+                action: 'Undo',
+                icon: 'fa-solid fa-rotate-left',
+                title: 'Undo',
+                secondary: true,
+                handler: () => this.doUndo(availableActions['Undo']?.eventId)
+            },
+            {
+                action: 'EndTurn',
+                icon: 'fa-solid fa-forward-step',
+                title: 'End Turn',
+                secondary: true,
+                handler: () => this.doEndTurn(this.currentGame.phase.currentPlayerId)
+            }
+        ];
+
+        // Define fixed buttons for Row 2: Knight, Road Building, Year of Plenty, Monopoly
+        const row2Buttons = [
+            {
+                action: 'PlayKnight',
+                icon: 'fa-solid fa-chess-knight',
+                title: 'Play Knight',
+                handler: () => this.startSelection('tile', availableActions['PlayKnight']?.tileIds, this.currentGame.phase.currentPlayerId, 'PlayKnight')
+            },
+            {
+                action: 'PlayRoadBuilding',
+                icon: 'fa-solid fa-road',
+                title: 'Play Road Building',
+                handler: () => this.doPlayRoadBuilding(this.currentGame.phase.currentPlayerId)
+            },
+            {
+                action: 'PlayYearOfPlenty',
+                icon: 'fa-solid fa-gift',
+                title: 'Play Year of Plenty',
+                handler: () => this.showYearOfPlentyModal(this.currentGame.phase.currentPlayerId)
+            },
+            {
+                action: 'PlayMonopoly',
+                icon: 'fa-solid fa-hand-holding-dollar',
+                title: 'Play Monopoly',
+                handler: () => this.showMonopolyModal(this.currentGame.phase.currentPlayerId)
+            }
+        ];
+
+        // Helper to create an icon button
+        const createIconButton = (config, isEnabled) => {
+            const btn = document.createElement('button');
+            btn.className = 'action-btn icon-btn';
+            btn.innerHTML = `<i class="${config.icon}"></i>`;
+            btn.title = config.title;
+
+            if (isEnabled) {
+                if (config.highlightWhenEnabled) {
+                    btn.classList.add('highlight');
+                } else if (config.secondary) {
+                    btn.classList.add('secondary');
+                }
+                btn.onclick = config.handler;
+            } else {
+                btn.disabled = true;
+            }
+
+            return btn;
+        };
+
+        // Render Row 1 buttons
+        row1Buttons.forEach(config => {
+            const isEnabled = isMyTurn && !!availableActions[config.action];
+            const btn = createIconButton(config, isEnabled);
+            row1.appendChild(btn);
         });
 
-        // Render action buttons (excluding placement actions)
-        buttonActions.forEach(action => {
+        // Render Row 2 buttons
+        row2Buttons.forEach(config => {
+            const isEnabled = isMyTurn && !!availableActions[config.action];
+            const btn = createIconButton(config, isEnabled);
+            row2.appendChild(btn);
+        });
+
+        // Render situational text buttons
+        const situationalActions = [
+            'DiscardCards', 'StealResource', 'RespondToTrade',
+            'AcceptTrade', 'RejectAllOffers', 'SelectTarget'
+        ];
+
+        situationalActions.forEach(actionName => {
+            const action = availableActions[actionName];
+            if (!action && actionName !== 'RespondToTrade') return;
+
+            // Special case: RespondToTrade can come from canRespondToTrade
+            if (actionName === 'RespondToTrade' && !action && !canRespondToTrade) return;
+
             const btn = document.createElement('button');
             btn.className = 'action-btn';
 
-            switch (action.action) {
-                case 'RollDice':
-                    btn.innerHTML = '<i class="fa-solid fa-dice"></i>';
-                    btn.title = 'Roll Dice';
-                    btn.classList.add('highlight', 'icon-btn');
-                    btn.onclick = () => this.doRollDice(this.currentGame.phase.currentPlayerId);
-                    break;
-
-                case 'StealResource':
-                    btn.textContent = `Steal from: ${action.targetPlayerIds?.join(', ')}`;
-                    btn.onclick = () => this.showStealOptions(action);
-                    break;
-
+            switch (actionName) {
                 case 'DiscardCards':
-                    // Calculate discard count: half of resources (rounded down) for players with > 7 cards
+                    if (!isMyTurn) return;
                     const discardPlayer = this.currentGame.players.find(p => p.id === this.currentGame.phase.currentPlayerId);
                     const discardCount = discardPlayer ? Math.floor(discardPlayer.resourceCount / 2) : 0;
                     btn.textContent = `Discard ${discardCount} Cards`;
@@ -752,70 +841,20 @@ const App = {
                     btn.onclick = () => this.showDiscardModal({ ...action, count: discardCount });
                     break;
 
-                case 'BuyDevelopmentCard':
-                    btn.innerHTML = '<i class="fa-solid fa-scroll"></i>';
-                    btn.title = 'Buy Dev Card';
-                    btn.classList.add('icon-btn');
-                    btn.onclick = () => this.doBuyDevCard(this.currentGame.phase.currentPlayerId);
-                    break;
-
-                case 'TradeWithBank':
-                    btn.innerHTML = '<i class="fa-solid fa-building-columns"></i>';
-                    btn.title = 'Trade with Bank';
-                    btn.classList.add('icon-btn');
-                    btn.onclick = () => this.showTradeModal(action);
-                    break;
-
-                case 'TradeWithPlayers':
-                    btn.innerHTML = '<i class="fa-solid fa-handshake"></i>';
-                    btn.title = 'Trade with Players';
-                    btn.classList.add('icon-btn');
-                    btn.onclick = () => this.showPlayerTradeModal();
-                    break;
-
-                case 'PlayKnight':
-                    btn.innerHTML = '<i class="fa-solid fa-chess-knight"></i>';
-                    btn.title = 'Play Knight';
-                    btn.classList.add('icon-btn');
-                    btn.onclick = () => this.startSelection('tile', action.tileIds, this.currentGame.phase.currentPlayerId, 'PlayKnight');
-                    break;
-
-                case 'PlayRoadBuilding':
-                    btn.innerHTML = '<i class="fa-solid fa-road"></i>';
-                    btn.title = 'Play Road Building';
-                    btn.classList.add('icon-btn');
-                    btn.onclick = () => this.doPlayRoadBuilding(this.currentGame.phase.currentPlayerId);
-                    break;
-
-                case 'PlayYearOfPlenty':
-                    btn.innerHTML = '<i class="fa-solid fa-gift"></i>';
-                    btn.title = 'Play Year of Plenty';
-                    btn.classList.add('icon-btn');
-                    btn.onclick = () => this.showYearOfPlentyModal(this.currentGame.phase.currentPlayerId);
-                    break;
-
-                case 'PlayMonopoly':
-                    btn.innerHTML = '<i class="fa-solid fa-hand-holding-dollar"></i>';
-                    btn.title = 'Play Monopoly';
-                    btn.classList.add('icon-btn');
-                    btn.onclick = () => this.showMonopolyModal(this.currentGame.phase.currentPlayerId);
-                    break;
-
-                case 'EndTurn':
-                    btn.innerHTML = '<i class="fa-solid fa-forward-step"></i>';
-                    btn.title = 'End Turn';
-                    btn.classList.add('secondary', 'icon-btn');
-                    btn.onclick = () => this.doEndTurn(this.currentGame.phase.currentPlayerId);
+                case 'StealResource':
+                    if (!isMyTurn) return;
+                    btn.textContent = `Steal from: ${action.targetPlayerIds?.join(', ')}`;
+                    btn.onclick = () => this.showStealOptions(action);
                     break;
 
                 case 'RespondToTrade':
                     btn.textContent = 'Respond to Trade';
                     btn.classList.add('highlight');
-                    btn.onclick = () => this.showRespondToTradeModal(action);
+                    btn.onclick = () => this.showRespondToTradeModal(action || this.currentGame.activeTrade || {});
                     break;
 
                 case 'AcceptTrade':
-                    // Find players who have accepted the trade
+                    if (!isMyTurn) return;
                     const acceptedResponses = pendingResponses.filter(r => r.responseType === 'Accept');
                     if (acceptedResponses.length === 1) {
                         const acceptingPlayerName = this.getPlayerName(acceptedResponses[0].playerId);
@@ -828,58 +867,33 @@ const App = {
                     break;
 
                 case 'RejectAllOffers':
+                    if (!isMyTurn) return;
                     btn.textContent = 'Cancel Trade';
                     btn.classList.add('secondary');
                     btn.onclick = () => this.doCancelTrade();
                     break;
 
                 case 'SelectTarget':
+                    if (!isMyTurn) return;
                     btn.textContent = 'Select Target';
                     btn.classList.add('highlight');
                     btn.onclick = () => this.showSelectTargetModal(action.playerIds);
                     break;
 
-                case 'Undo':
-                    btn.innerHTML = '<i class="fa-solid fa-rotate-left"></i>';
-                    btn.title = 'Undo';
-                    btn.classList.add('secondary', 'icon-btn');
-                    btn.onclick = () => this.doUndo(action.eventId);
-                    break;
-
                 default:
-                    btn.textContent = action.action;
-                    btn.disabled = true;
+                    return;
             }
 
-            container.appendChild(btn);
+            situationalContainer.appendChild(btn);
         });
 
-        // If player can respond to a trade but RespondToTrade wasn't in the actions list,
-        // add a respond button based on the game state
-        if (canRespondToTrade && !hasRespondToTrade) {
-            const btn = document.createElement('button');
-            btn.className = 'action-btn highlight';
-            btn.textContent = 'Respond to Trade';
-            btn.onclick = () => this.showRespondToTradeModal(this.currentGame.activeTrade || {});
-            container.appendChild(btn);
-        }
-
-        // If no actions to show after filtering and no trade response button
-        if (actionsToShow.length === 0 && !canRespondToTrade) {
-            container.innerHTML = '<div class="log-entry">No actions available</div>';
-        }
-
-        // Auto-trigger DiscardCards modal when it's the only mandatory action
-        // (Placement actions are now auto-shown on the board, so we only need this for modals)
+        // Auto-trigger DiscardCards modal when needed
         const discardModalOpen = !document.getElementById('discard-modal').classList.contains('hidden');
-        if (isMyTurn && !discardModalOpen) {
-            const discardAction = actionsToShow.find(a => a.action === 'DiscardCards');
-            if (discardAction) {
-                const playerId = this.currentGame.phase.currentPlayerId;
-                const player = this.currentGame.players.find(p => p.id === playerId);
-                const discardCount = player ? Math.floor(player.resourceCount / 2) : 0;
-                this.showDiscardModal({ ...discardAction, count: discardCount });
-            }
+        if (isMyTurn && !discardModalOpen && availableActions['DiscardCards']) {
+            const playerId = this.currentGame.phase.currentPlayerId;
+            const player = this.currentGame.players.find(p => p.id === playerId);
+            const discardCount = player ? Math.floor(player.resourceCount / 2) : 0;
+            this.showDiscardModal({ ...availableActions['DiscardCards'], count: discardCount });
         }
     },
 

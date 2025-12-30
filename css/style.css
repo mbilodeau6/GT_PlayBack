@@ -489,8 +489,21 @@ select:focus {
     font-weight: bold;
 }
 
-/* Actions List */
-#actions-list {
+/* Action Button Rows */
+#action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.action-row {
+    display: flex;
+    gap: 0.4rem;
+    justify-content: center;
+}
+
+#situational-actions {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
@@ -506,6 +519,12 @@ select:focus {
     text-align: center;
     padding: 0.3rem 0.8rem;
     line-height: 1;
+    flex: 0 0 auto;
+}
+
+.action-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
 .action-btn.highlight {
