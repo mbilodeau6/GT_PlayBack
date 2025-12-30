@@ -475,7 +475,7 @@ const App = {
         Board.render(game);
 
         // Re-apply selectable elements if in manual selection mode (board render clears them)
-        // Auto-show indicators are re-applied in renderActions() via showPlacementIndicators()
+        // Auto-show indicators are re-applied in renderActions() via showBoardIndicators()
         if (this.selectionMode && this.selectableIds?.length > 0) {
             Board.setSelectableElements(this.selectionMode, this.selectableIds, this.pendingAction);
         }
@@ -652,7 +652,7 @@ const App = {
         const row1 = document.getElementById('action-row-1');
         const row2 = document.getElementById('action-row-2');
         const situationalContainer = document.getElementById('situational-actions');
-        // Status box elements (shows "Waiting on..." or "Select an action...")
+        // Status box elements (shows "Waiting on..." or action guidance)
         const statusBar = document.getElementById('action-status-bar');
         const statusText = document.getElementById('action-status-text');
         const cancelBtn = document.getElementById('btn-cancel-selection');
@@ -679,16 +679,7 @@ const App = {
 
         // Check if it's the selected player's turn
         const isMyTurn = this.isMyTurn();
-
-        // Update status bar for waiting state
-        if (!isMyTurn && !hasRespondToTrade && !canRespondToTrade) {
-            const currentPlayerName = this.getPlayerName(this.currentGame?.phase?.currentPlayerId);
-            statusText.textContent = `Waiting on ${currentPlayerName}`;
-            statusBar.classList.remove('selection');
-            cancelBtn.classList.add('hidden');
-            this.availablePlacementActions = null;
-            Board.clearSelectableElements();
-        }
+        const phaseState = this.currentGame?.phase?.phaseState;
 
         // Build map of available actions for quick lookup
         const availableActions = {};
@@ -701,16 +692,12 @@ const App = {
         const placementActions = (this.possibleActions || []).filter(a => placementActionTypes.includes(a.action));
         this.availablePlacementActions = placementActions;
 
+        // Show board indicators if there are placement actions
         if (isMyTurn && placementActions.length > 0) {
-            const buttonActions = (this.possibleActions || []).filter(a => !placementActionTypes.includes(a.action));
-            this.showPlacementIndicators(placementActions, buttonActions, statusBar, statusText, cancelBtn);
-        } else if (isMyTurn) {
-            // It's my turn but no placement actions - clear status
+            this.showBoardIndicators(placementActions);
+        } else {
             this.availablePlacementActions = null;
             Board.clearSelectableElements();
-            statusText.textContent = '';
-            statusBar.classList.remove('selection');
-            cancelBtn.classList.add('hidden');
         }
 
         // Define fixed buttons for Row 1: Roll, Buy Dev Card, Trade w Bank, Trade w Players, Undo, End Turn
@@ -891,6 +878,14 @@ const App = {
             situationalContainer.appendChild(btn);
         });
 
+        // Compute and update status message
+        this.updateStatusMessage(
+            statusBar, statusText, cancelBtn,
+            isMyTurn, hasRespondToTrade, canRespondToTrade,
+            phaseState, placementActions, availableActions,
+            row1Buttons, row2Buttons
+        );
+
         // Auto-trigger DiscardCards modal when needed
         const discardModalOpen = !document.getElementById('discard-modal').classList.contains('hidden');
         if (isMyTurn && !discardModalOpen && availableActions['DiscardCards']) {
@@ -901,9 +896,139 @@ const App = {
         }
     },
 
+    // Update the status box with appropriate message based on game state
+    updateStatusMessage(statusBar, statusText, cancelBtn, isMyTurn, hasRespondToTrade, canRespondToTrade, phaseState, placementActions, availableActions, row1Buttons, row2Buttons) {
+        cancelBtn.classList.add('hidden');
+
+        // Not my turn - show waiting message (neutral color)
+        if (!isMyTurn && !hasRespondToTrade && !canRespondToTrade) {
+            const currentPlayerName = this.getPlayerName(this.currentGame?.phase?.currentPlayerId);
+            statusText.textContent = `Waiting on ${currentPlayerName}`;
+            statusBar.classList.remove('selection');
+            return;
+        }
+
+        // It's my turn or I can respond - show highlighted status
+        statusBar.classList.add('selection');
+
+        // Special case: RollOrUseDevCard phase
+        if (isMyTurn && phaseState === 'RollOrUseDevCard') {
+            statusText.textContent = "It's your turn!";
+            return;
+        }
+
+        // Determine what actions are available
+        const hasBoardActions = placementActions.length > 0;
+
+        // Count ALL enabled button actions (including Undo and EndTurn)
+        const allButtonConfigs = [...row1Buttons, ...row2Buttons];
+        const enabledButtons = allButtonConfigs.filter(config => !!availableActions[config.action]);
+
+        // Check for situational actions (treated as buttons)
+        const situationalActionTypes = ['DiscardCards', 'StealResource', 'RespondToTrade', 'AcceptTrade', 'RejectAllOffers', 'SelectTarget'];
+        const enabledSituational = situationalActionTypes.filter(action => {
+            if (action === 'RespondToTrade') {
+                return !!availableActions[action] || canRespondToTrade;
+            }
+            return !!availableActions[action];
+        });
+
+        // For determining if there are "main" actions (excluding auxiliary Undo/EndTurn)
+        const auxiliaryActions = ['Undo', 'EndTurn'];
+        const enabledMainButtons = enabledButtons.filter(config => !auxiliaryActions.includes(config.action));
+
+        const hasButtonActions = enabledMainButtons.length > 0 || enabledSituational.length > 0;
+        // Total count includes ALL enabled buttons for determining single-action specificity
+        const totalButtonCount = enabledButtons.length + enabledSituational.length;
+
+        // Determine message based on available actions
+        if (hasBoardActions && hasButtonActions) {
+            // Both board and button actions available
+            statusText.textContent = 'Make your move on the board or with action buttons.';
+        } else if (hasBoardActions && !hasButtonActions) {
+            // Only board actions
+            if (placementActions.length === 1) {
+                // Single board action type - be specific
+                const action = placementActions[0].action;
+                switch (action) {
+                    case 'PlaceSettlement':
+                        statusText.textContent = 'Place a settlement on the board.';
+                        break;
+                    case 'PlaceRoad':
+                        statusText.textContent = 'Place a road on the board.';
+                        break;
+                    case 'UpgradeSettlement':
+                        statusText.textContent = 'Upgrade a settlement to a city.';
+                        break;
+                    case 'PlaceRobber':
+                        statusText.textContent = 'Move the robber to a new tile.';
+                        break;
+                    default:
+                        statusText.textContent = 'Make your move on the board.';
+                }
+            } else {
+                statusText.textContent = 'Make your move on the board.';
+            }
+        } else if (!hasBoardActions && hasButtonActions) {
+            // Only button actions
+            if (totalButtonCount === 1) {
+                // Single button action - be specific
+                const singleAction = enabledMainButtons[0]?.action || enabledSituational[0];
+                statusText.textContent = this.getSpecificActionMessage(singleAction);
+            } else {
+                statusText.textContent = 'Choose an action from the buttons above.';
+            }
+        } else {
+            // No main actions available (only Undo/EndTurn)
+            if (availableActions['EndTurn']) {
+                statusText.textContent = 'Click End Turn to finish your turn.';
+            } else {
+                statusText.textContent = '';
+                statusBar.classList.remove('selection');
+            }
+        }
+    },
+
+    // Get a specific message for a single available action
+    getSpecificActionMessage(action) {
+        switch (action) {
+            case 'RollDice':
+                return 'Roll the dice to continue.';
+            case 'BuyDevelopmentCard':
+                return 'Buy a development card.';
+            case 'TradeWithBank':
+                return 'Trade resources with the bank.';
+            case 'TradeWithPlayers':
+                return 'Propose a trade with other players.';
+            case 'PlayKnight':
+                return 'Play your Knight card.';
+            case 'PlayRoadBuilding':
+                return 'Play Road Building to place roads.';
+            case 'PlayYearOfPlenty':
+                return 'Play Year of Plenty to gain resources.';
+            case 'PlayMonopoly':
+                return 'Play Monopoly to take a resource.';
+            case 'DiscardCards':
+                return 'Discard cards to continue.';
+            case 'StealResource':
+                return 'Choose a player to steal from.';
+            case 'RespondToTrade':
+                return 'Respond to the trade offer.';
+            case 'AcceptTrade':
+                return 'Accept or reject the trade responses.';
+            case 'RejectAllOffers':
+                return 'Cancel or accept the trade.';
+            case 'SelectTarget':
+                return 'Select a target player.';
+            default:
+                return 'Choose an action from the buttons above.';
+        }
+    },
+
     // ==================== PLACEMENT INDICATORS ====================
 
-    showPlacementIndicators(placementActions, buttonActions, statusBar, statusText, cancelBtn) {
+    // Show board indicators for placement actions (without status message)
+    showBoardIndicators(placementActions) {
         const playerId = this.currentGame.phase.currentPlayerId;
 
         // Collect all selectable IDs for each type
@@ -939,38 +1064,6 @@ const App = {
 
         // Store the player ID for when clicks happen
         this.selectedPlayerId = playerId;
-
-        // Determine info bar message
-        // Count non-auxiliary button actions (exclude Undo, EndTurn)
-        const auxiliaryActions = ['Undo', 'EndTurn'];
-        const mainButtonActions = buttonActions.filter(a => !auxiliaryActions.includes(a.action));
-
-        // If exactly one placement action type and no main button actions, show specific message
-        let message = '';
-        if (placementActions.length === 1 && mainButtonActions.length === 0) {
-            const action = placementActions[0];
-            switch (action.action) {
-                case 'PlaceSettlement':
-                    message = 'Select location for settlement';
-                    break;
-                case 'PlaceRoad':
-                    message = 'Select location for road';
-                    break;
-                case 'UpgradeSettlement':
-                    message = 'Select settlement to upgrade';
-                    break;
-                case 'PlaceRobber':
-                    message = 'Select tile for robber';
-                    break;
-            }
-        } else {
-            // Multiple options available - show generic message
-            message = 'Select an action on the board';
-        }
-
-        statusText.textContent = message;
-        statusBar.classList.add('selection');
-        cancelBtn.classList.add('hidden');
     },
 
     // ==================== SELECTION MODE ====================
