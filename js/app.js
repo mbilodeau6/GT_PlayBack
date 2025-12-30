@@ -528,11 +528,11 @@ const App = {
 
                 html += `<div class="player-resources-row">
                     <div class="player-resources">
-                        <span class="resource-box resource-Brick" title="Brick: ${res.Brick}">${res.Brick}</span>
                         <span class="resource-box resource-Wood" title="Wood: ${res.Wood}">${res.Wood}</span>
-                        <span class="resource-box resource-Ore" title="Ore: ${res.Ore}">${res.Ore}</span>
-                        <span class="resource-box resource-Grain" title="Grain: ${res.Grain}">${res.Grain}</span>
+                        <span class="resource-box resource-Brick" title="Brick: ${res.Brick}">${res.Brick}</span>
                         <span class="resource-box resource-Wool" title="Wool: ${res.Wool}">${res.Wool}</span>
+                        <span class="resource-box resource-Grain" title="Grain: ${res.Grain}">${res.Grain}</span>
+                        <span class="resource-box resource-Ore" title="Ore: ${res.Ore}">${res.Ore}</span>
                     </div>
                     ${devCardsHtml}
                 </div>`;
@@ -1098,7 +1098,7 @@ const App = {
         const requestContainer = document.getElementById('trade-request-options');
         requestContainer.innerHTML = '';
 
-        ['Brick', 'Wood', 'Ore', 'Grain', 'Wool'].forEach(resource => {
+        ['Wood', 'Brick', 'Wool', 'Grain', 'Ore'].forEach(resource => {
             const option = document.createElement('div');
             option.className = `trade-card resource-box resource-${resource}`;
             option.title = resource;
@@ -1279,7 +1279,7 @@ const App = {
         const container = document.getElementById('player-trade-resources');
         container.innerHTML = '';
 
-        const resources = ['Brick', 'Wood', 'Ore', 'Grain', 'Wool'];
+        const resources = ['Wood', 'Brick', 'Wool', 'Grain', 'Ore'];
         resources.forEach(resource => {
             const available = this.playerTradeResources[resource] || 0;
             const offerCount = this.playerTradeOffer[resource] || 0;
@@ -1413,9 +1413,11 @@ const App = {
         this.discardPlayerId = playerId;
         this.selectedDiscards = [];
 
-        // Create cards for each resource the player has
-        const resources = player.resources;
-        Object.entries(resources).forEach(([resource, count]) => {
+        // Create cards for each resource the player has (in consistent order)
+        const resourceOrder = ['Wood', 'Brick', 'Wool', 'Grain', 'Ore'];
+        const playerResources = player.resources;
+        resourceOrder.forEach(resource => {
+            const count = playerResources[resource] || 0;
             for (let i = 0; i < count; i++) {
                 const card = document.createElement('div');
                 card.className = `discard-card resource-box resource-${resource}`;
@@ -1678,7 +1680,7 @@ const App = {
         const container = document.getElementById('resource-selection');
         container.innerHTML = '';
 
-        const resources = ['Brick', 'Wood', 'Ore', 'Grain', 'Wool'];
+        const resources = ['Wood', 'Brick', 'Wool', 'Grain', 'Ore'];
         resources.forEach(resource => {
             const div = document.createElement('div');
             div.className = `resource-option resource-box resource-${resource}`;
@@ -1728,7 +1730,7 @@ const App = {
     },
 
     updateResourceSelectionUI() {
-        const resources = ['Brick', 'Wood', 'Ore', 'Grain', 'Wool'];
+        const resources = ['Wood', 'Brick', 'Wool', 'Grain', 'Ore'];
         resources.forEach(resource => {
             const count = this.selectedResources.filter(r => r === resource).length;
             const countEl = document.querySelector(`#resource-selection .resource-count[data-resource="${resource}"]`);
