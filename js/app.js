@@ -23,6 +23,10 @@ const App = {
     autoRefreshDelay: 3000, // 3 seconds
     autoRefreshEnabled: false, // Controlled via Settings toggle
 
+    // Turn tracking for sound notifications
+    previousCurrentPlayerId: null,
+    gameOverSoundPlayed: false,
+
     init() {
         // Initialize board
         const svgElement = document.getElementById('board');
@@ -211,6 +215,7 @@ const App = {
 
         const response = await API.createGame(gameType);
         if (response.success) {
+            this.resetGameStateFlags();
             this.handleGameResponse(response);
             this.saveGameId(response.gameState.id);
             this.populateMenuPlayerDropdown();
@@ -229,6 +234,7 @@ const App = {
 
         const response = await API.getGame(gameId);
         if (response.success) {
+            this.resetGameStateFlags();
             this.handleGameResponse(response);
             this.saveGameId(gameId);
             this.populateMenuPlayerDropdown();
@@ -236,6 +242,12 @@ const App = {
         } else {
             this.log(`Error: ${response.errorMessage}`, 'error');
         }
+    },
+
+    // Reset flags when loading a new game
+    resetGameStateFlags() {
+        this.previousCurrentPlayerId = null;
+        this.gameOverSoundPlayed = false;
     },
 
     async refreshGameState() {
@@ -378,12 +390,21 @@ const App = {
     },
 
     handleGameResponse(response) {
+        const previousPlayerId = this.previousCurrentPlayerId;
+        const newPlayerId = response.gameState?.phase?.currentPlayerId;
+
         this.currentGame = response.gameState;
         this.currentGameId = response.gameState.id;
         this.possibleActions = response.possibleActions || [];
 
         this.displayGame();
         this.updateUI();
+
+        // Check for turn change and play sound if it's now "Playing as" player's turn
+        if (newPlayerId && newPlayerId !== previousPlayerId && newPlayerId === this.playingAsPlayerId) {
+            Sounds.playYourTurn();
+        }
+        this.previousCurrentPlayerId = newPlayerId;
 
         // Start auto-refresh if enabled and not already running
         if (this.autoRefreshEnabled && !this.autoRefreshInterval) {
@@ -1831,6 +1852,16 @@ const App = {
                 </div>
             `;
         }).join('');
+
+        // Play game over sound (only once per game)
+        if (!this.gameOverSoundPlayed) {
+            this.gameOverSoundPlayed = true;
+            if (isWinner) {
+                Sounds.playVictory();
+            } else {
+                Sounds.playDefeat();
+            }
+        }
 
         // Show the modal
         modal.classList.remove('hidden');
