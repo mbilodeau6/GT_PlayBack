@@ -120,14 +120,6 @@ const Board = {
         if (tile.resource !== 'Desert') {
             this.renderNumberToken(pos.x, pos.y, tile.diceNumber);
         }
-
-        // Add tile ID label (for debugging)
-        const idLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        idLabel.setAttribute('x', pos.x);
-        idLabel.setAttribute('y', pos.y + 35);
-        idLabel.setAttribute('class', 'tile-id');
-        idLabel.textContent = tile.id;
-        this.layers.labels.appendChild(idLabel);
     },
 
     renderNumberToken(cx, cy, number) {
