@@ -857,7 +857,7 @@ select:focus {
 
 .vertex-placeholder.selectable {
     fill: #00ffff;
-    animation: selection-pulse 1s ease-in-out infinite;
+    animation: selection-pulse-soft 1s ease-in-out infinite;
 }
 
 .vertex-placeholder.selectable:hover {
@@ -870,7 +870,7 @@ select:focus {
 .robber-placeholder {
     fill: #00ffff;
     cursor: pointer;
-    animation: selection-pulse 1s ease-in-out infinite;
+    animation: selection-pulse-soft 1s ease-in-out infinite;
 }
 
 .robber-placeholder:hover {
@@ -879,13 +879,23 @@ select:focus {
     animation: none;
 }
 
-/* Selection pulse animation for all selectable elements */
+/* Selection pulse animation - standard (for roads, upgrades) */
 @keyframes selection-pulse {
     0%, 100% {
         opacity: 0.1;
     }
     50% {
         opacity: 0.7;
+    }
+}
+
+/* Selection pulse animation - softer (for settlements, robber) */
+@keyframes selection-pulse-soft {
+    0%, 100% {
+        opacity: 0.1;
+    }
+    50% {
+        opacity: 0.5;
     }
 }
 
