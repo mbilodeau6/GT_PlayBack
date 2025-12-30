@@ -814,14 +814,15 @@ select:focus {
 }
 
 .edge-placeholder.selectable {
-    opacity: 0.5;
-    stroke: #e94560;
+    stroke: #00ffff;
     stroke-dasharray: 4, 4;
+    animation: selection-pulse 1s ease-in-out infinite;
 }
 
 .edge-placeholder.selectable:hover {
     opacity: 1;
-    stroke: #ff6b6b;
+    stroke: #7fffff;
+    animation: none;
 }
 
 /* Settlements */
@@ -832,14 +833,16 @@ select:focus {
 }
 
 .settlement.selectable {
-    stroke: #e94560;
+    stroke: #00ffff;
     stroke-width: 3;
     stroke-dasharray: 5, 5;
+    animation: selection-pulse 1s ease-in-out infinite;
 }
 
 .settlement.selectable:hover {
-    stroke: #ff6b6b;
+    stroke: #7fffff;
     stroke-width: 4;
+    animation: none;
 }
 
 .settlement.player-Red { fill: #e74c3c; }
@@ -867,35 +870,37 @@ select:focus {
 }
 
 .vertex-placeholder.selectable {
-    opacity: 0.7;
-    fill: #e94560;
+    fill: #00ffff;
+    animation: selection-pulse 1s ease-in-out infinite;
 }
 
 .vertex-placeholder.selectable:hover {
     opacity: 1;
-    fill: #ff6b6b;
+    fill: #7fffff;
+    animation: none;
 }
 
 /* Robber placeholders (for tile selection) */
 .robber-placeholder {
     fill: #00ffff;
     cursor: pointer;
-    animation: robber-pulse 1s ease-in-out infinite;
-}
-
-@keyframes robber-pulse {
-    0%, 100% {
-        opacity: 0.1;
-    }
-    50% {
-        opacity: 0.7;
-    }
+    animation: selection-pulse 1s ease-in-out infinite;
 }
 
 .robber-placeholder:hover {
     opacity: 1;
     fill: #7fffff;
     animation: none;
+}
+
+/* Selection pulse animation for all selectable elements */
+@keyframes selection-pulse {
+    0%, 100% {
+        opacity: 0.1;
+    }
+    50% {
+        opacity: 0.7;
+    }
 }
 
 /* Ports */
