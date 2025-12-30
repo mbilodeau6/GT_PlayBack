@@ -612,10 +612,26 @@ const Board = {
                 });
             });
         } else if (mode === 'tile') {
+            // Create pink circles at robber position for each selectable tile
             ids.forEach(id => {
-                this.svg.querySelectorAll(`[data-tile-id="${id}"]`).forEach(el => {
-                    el.classList.add('selectable');
+                const pos = this.tilePositions.get(id);
+                if (!pos) return;
+
+                // Position matches robber offset (x + 25, y + 20)
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', pos.x + 25);
+                circle.setAttribute('cy', pos.y + 20);
+                circle.setAttribute('r', 15);
+                circle.setAttribute('class', 'robber-placeholder selectable');
+                circle.setAttribute('data-tile-id', id);
+
+                circle.addEventListener('click', () => {
+                    if (this.onTileClick) {
+                        this.onTileClick(id);
+                    }
                 });
+
+                this.layers.robber.appendChild(circle);
             });
         }
     },
@@ -623,6 +639,10 @@ const Board = {
     clearSelectableElements() {
         this.svg.querySelectorAll('.selectable').forEach(el => {
             el.classList.remove('selectable');
+        });
+        // Remove robber placeholders
+        this.svg.querySelectorAll('.robber-placeholder').forEach(el => {
+            el.remove();
         });
     },
 

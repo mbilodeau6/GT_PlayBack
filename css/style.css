@@ -876,6 +876,28 @@ select:focus {
     fill: #ff6b6b;
 }
 
+/* Robber placeholders (for tile selection) */
+.robber-placeholder {
+    fill: #00ffff;
+    cursor: pointer;
+    animation: robber-pulse 1s ease-in-out infinite;
+}
+
+@keyframes robber-pulse {
+    0%, 100% {
+        opacity: 0.1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.robber-placeholder:hover {
+    opacity: 1;
+    fill: #7fffff;
+    animation: none;
+}
+
 /* Ports */
 .port-line {
     stroke: #f5f5dc;
