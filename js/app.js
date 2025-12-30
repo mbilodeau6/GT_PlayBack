@@ -436,7 +436,7 @@ const App = {
 
         // Re-apply selectable elements if in selection mode (board render clears them)
         if (this.selectionMode && this.selectableIds?.length > 0) {
-            Board.setSelectableElements(this.selectionMode, this.selectableIds);
+            Board.setSelectableElements(this.selectionMode, this.selectableIds, this.pendingAction);
         }
 
         // Render players
@@ -850,7 +850,7 @@ const App = {
         document.getElementById('selection-type').textContent = `${actionType} - click a ${mode}`;
 
         // Update board to show selectable elements
-        Board.setSelectableElements(mode, ids);
+        Board.setSelectableElements(mode, ids, actionType);
     },
 
     cancelSelection() {

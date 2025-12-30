@@ -829,20 +829,6 @@ select:focus {
 .settlement {
     stroke: #333;
     stroke-width: 2;
-    cursor: pointer;
-}
-
-.settlement.selectable {
-    stroke: #00ffff;
-    stroke-width: 3;
-    stroke-dasharray: 5, 5;
-    animation: selection-pulse 1s ease-in-out infinite;
-}
-
-.settlement.selectable:hover {
-    stroke: #7fffff;
-    stroke-width: 4;
-    animation: none;
 }
 
 .settlement.player-Red { fill: #e74c3c; }
@@ -901,6 +887,19 @@ select:focus {
     50% {
         opacity: 0.7;
     }
+}
+
+/* Upgrade placeholders (for city upgrade selection) */
+.upgrade-placeholder {
+    fill: #00ffff;
+    cursor: pointer;
+    animation: selection-pulse 1s ease-in-out infinite;
+}
+
+.upgrade-placeholder:hover {
+    opacity: 1;
+    fill: #7fffff;
+    animation: none;
 }
 
 /* Ports */

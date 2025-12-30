@@ -595,16 +595,40 @@ const Board = {
 
     // ==================== SELECTION HIGHLIGHTING ====================
 
-    setSelectableElements(mode, ids) {
+    setSelectableElements(mode, ids, actionType) {
         this.clearSelectableElements();
 
         if (mode === 'vertex') {
-            ids.forEach(id => {
-                // Use querySelectorAll to find all elements (placeholders and buildings)
-                this.svg.querySelectorAll(`[data-vertex-id="${id}"]`).forEach(el => {
-                    el.classList.add('selectable');
+            if (actionType === 'UpgradeSettlement') {
+                // Create overlay circles at vertex positions for upgrade selection
+                ids.forEach(id => {
+                    const pos = this.vertexPositions.get(id);
+                    if (!pos) return;
+
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', pos.x);
+                    circle.setAttribute('cy', pos.y);
+                    circle.setAttribute('r', 12);
+                    circle.setAttribute('class', 'upgrade-placeholder selectable');
+                    circle.setAttribute('data-vertex-id', id);
+
+                    circle.addEventListener('click', () => {
+                        if (this.onVertexClick) {
+                            this.onVertexClick(id);
+                        }
+                    });
+
+                    // Add to robber layer (top layer) so it appears above settlements
+                    this.layers.robber.appendChild(circle);
                 });
-            });
+            } else {
+                // For PlaceSettlement, use existing vertex placeholders
+                ids.forEach(id => {
+                    this.svg.querySelectorAll(`[data-vertex-id="${id}"]`).forEach(el => {
+                        el.classList.add('selectable');
+                    });
+                });
+            }
         } else if (mode === 'edge') {
             ids.forEach(id => {
                 this.svg.querySelectorAll(`[data-edge-id="${id}"]`).forEach(el => {
@@ -612,7 +636,7 @@ const Board = {
                 });
             });
         } else if (mode === 'tile') {
-            // Create pink circles at robber position for each selectable tile
+            // Create circles at robber position for each selectable tile
             ids.forEach(id => {
                 const pos = this.tilePositions.get(id);
                 if (!pos) return;
@@ -640,8 +664,8 @@ const Board = {
         this.svg.querySelectorAll('.selectable').forEach(el => {
             el.classList.remove('selectable');
         });
-        // Remove robber placeholders
-        this.svg.querySelectorAll('.robber-placeholder').forEach(el => {
+        // Remove dynamically created placeholders
+        this.svg.querySelectorAll('.robber-placeholder, .upgrade-placeholder').forEach(el => {
             el.remove();
         });
     },
