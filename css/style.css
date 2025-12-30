@@ -530,7 +530,7 @@ select:focus {
     background-color: #27ae60;
 }
 
-/* Action Status Bar (combined waiting/selection info) */
+/* Status Box (shows "Waiting on..." or "Select an action...") */
 #action-status-bar {
     background-color: #0a1628;
     padding: 0.75rem;
@@ -587,8 +587,8 @@ select:focus {
 .resource-Grain { color: #d4a826; }
 .resource-Wool { color: #8bc34a; }
 
-/* Status Log */
-#status-log {
+/* History Log (event log) */
+#history-log {
     min-height: 100px;
     max-height: 400px;
     height: 150px;

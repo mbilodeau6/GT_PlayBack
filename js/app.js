@@ -652,6 +652,7 @@ const App = {
         const row1 = document.getElementById('action-row-1');
         const row2 = document.getElementById('action-row-2');
         const situationalContainer = document.getElementById('situational-actions');
+        // Status box elements (shows "Waiting on..." or "Select an action...")
         const statusBar = document.getElementById('action-status-bar');
         const statusText = document.getElementById('action-status-text');
         const cancelBtn = document.getElementById('btn-cancel-selection');
@@ -985,7 +986,7 @@ const App = {
         this.selectedPlayerId = playerId;
         this.pendingAction = actionType;
 
-        // Show selection info with cancel button (for manual button-triggered selections)
+        // Update status box with cancel button (for manual button-triggered selections)
         const statusBar = document.getElementById('action-status-bar');
         const statusText = document.getElementById('action-status-text');
         const cancelBtn = document.getElementById('btn-cancel-selection');
@@ -1005,6 +1006,7 @@ const App = {
         this.pendingAction = null;
         this.availablePlacementActions = null;
 
+        // Clear status box
         const statusBar = document.getElementById('action-status-bar');
         const statusText = document.getElementById('action-status-text');
         const cancelBtn = document.getElementById('btn-cancel-selection');
@@ -2128,8 +2130,9 @@ const App = {
         }
     },
 
+    // Render game event history to the history log
     renderEventLog() {
-        const container = document.getElementById('status-log');
+        const container = document.getElementById('history-log');
         container.innerHTML = '';
 
         const eventRecord = this.currentGame?.eventRecord;
@@ -2149,8 +2152,9 @@ const App = {
         container.scrollTop = container.scrollHeight;
     },
 
+    // Log a message to the history log
     log(message, type = '') {
-        const container = document.getElementById('status-log');
+        const container = document.getElementById('history-log');
         const entry = document.createElement('div');
         entry.className = `log-entry ${type}`;
         entry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
