@@ -652,7 +652,9 @@ const App = {
         const row1 = document.getElementById('action-row-1');
         const row2 = document.getElementById('action-row-2');
         const situationalContainer = document.getElementById('situational-actions');
-        const waitingMessage = document.getElementById('waiting-message');
+        const statusBar = document.getElementById('action-status-bar');
+        const statusText = document.getElementById('action-status-text');
+        const cancelBtn = document.getElementById('btn-cancel-selection');
 
         row1.innerHTML = '';
         row2.innerHTML = '';
@@ -677,16 +679,14 @@ const App = {
         // Check if it's the selected player's turn
         const isMyTurn = this.isMyTurn();
 
-        // Show/hide waiting message
+        // Update status bar for waiting state
         if (!isMyTurn && !hasRespondToTrade && !canRespondToTrade) {
             const currentPlayerName = this.getPlayerName(this.currentGame?.phase?.currentPlayerId);
-            waitingMessage.textContent = `Waiting on ${currentPlayerName}`;
-            waitingMessage.classList.remove('hidden');
+            statusText.textContent = `Waiting on ${currentPlayerName}`;
+            statusBar.classList.remove('selection');
+            cancelBtn.classList.add('hidden');
             this.availablePlacementActions = null;
             Board.clearSelectableElements();
-            document.getElementById('selection-info').classList.add('hidden');
-        } else {
-            waitingMessage.classList.add('hidden');
         }
 
         // Build map of available actions for quick lookup
@@ -702,11 +702,14 @@ const App = {
 
         if (isMyTurn && placementActions.length > 0) {
             const buttonActions = (this.possibleActions || []).filter(a => !placementActionTypes.includes(a.action));
-            this.showPlacementIndicators(placementActions, buttonActions);
-        } else if (!isMyTurn || placementActions.length === 0) {
+            this.showPlacementIndicators(placementActions, buttonActions, statusBar, statusText, cancelBtn);
+        } else if (isMyTurn) {
+            // It's my turn but no placement actions - clear status
             this.availablePlacementActions = null;
             Board.clearSelectableElements();
-            document.getElementById('selection-info').classList.add('hidden');
+            statusText.textContent = '';
+            statusBar.classList.remove('selection');
+            cancelBtn.classList.add('hidden');
         }
 
         // Define fixed buttons for Row 1: Roll, Buy Dev Card, Trade w Bank, Trade w Players, Undo, End Turn
@@ -899,7 +902,7 @@ const App = {
 
     // ==================== PLACEMENT INDICATORS ====================
 
-    showPlacementIndicators(placementActions, buttonActions) {
+    showPlacementIndicators(placementActions, buttonActions, statusBar, statusText, cancelBtn) {
         const playerId = this.currentGame.phase.currentPlayerId;
 
         // Collect all selectable IDs for each type
@@ -942,9 +945,9 @@ const App = {
         const mainButtonActions = buttonActions.filter(a => !auxiliaryActions.includes(a.action));
 
         // If exactly one placement action type and no main button actions, show specific message
+        let message = '';
         if (placementActions.length === 1 && mainButtonActions.length === 0) {
             const action = placementActions[0];
-            let message = '';
             switch (action.action) {
                 case 'PlaceSettlement':
                     message = 'Select location for settlement';
@@ -959,15 +962,14 @@ const App = {
                     message = 'Select tile for robber';
                     break;
             }
-            document.getElementById('selection-info').classList.remove('hidden');
-            document.getElementById('selection-type').textContent = message;
-            document.getElementById('btn-cancel-selection').classList.add('hidden');
         } else {
             // Multiple options available - show generic message
-            document.getElementById('selection-info').classList.remove('hidden');
-            document.getElementById('selection-type').textContent = 'Select an action on the board';
-            document.getElementById('btn-cancel-selection').classList.add('hidden');
+            message = 'Select an action on the board';
         }
+
+        statusText.textContent = message;
+        statusBar.classList.add('selection');
+        cancelBtn.classList.add('hidden');
     },
 
     // ==================== SELECTION MODE ====================
@@ -984,9 +986,13 @@ const App = {
         this.pendingAction = actionType;
 
         // Show selection info with cancel button (for manual button-triggered selections)
-        document.getElementById('selection-info').classList.remove('hidden');
-        document.getElementById('selection-type').textContent = `${actionType} - click a ${mode}`;
-        document.getElementById('btn-cancel-selection').classList.remove('hidden');
+        const statusBar = document.getElementById('action-status-bar');
+        const statusText = document.getElementById('action-status-text');
+        const cancelBtn = document.getElementById('btn-cancel-selection');
+
+        statusText.textContent = `${actionType} - click a ${mode}`;
+        statusBar.classList.add('selection');
+        cancelBtn.classList.remove('hidden');
 
         // Update board to show selectable elements
         Board.setSelectableElements(mode, ids, actionType);
@@ -999,7 +1005,13 @@ const App = {
         this.pendingAction = null;
         this.availablePlacementActions = null;
 
-        document.getElementById('selection-info').classList.add('hidden');
+        const statusBar = document.getElementById('action-status-bar');
+        const statusText = document.getElementById('action-status-text');
+        const cancelBtn = document.getElementById('btn-cancel-selection');
+
+        statusText.textContent = '';
+        statusBar.classList.remove('selection');
+        cancelBtn.classList.add('hidden');
         Board.clearSelectableElements();
     },
 
@@ -1022,7 +1034,8 @@ const App = {
 
             // Clear indicators after click
             Board.clearSelectableElements();
-            document.getElementById('selection-info').classList.add('hidden');
+            document.getElementById('action-status-text').textContent = '';
+            document.getElementById('action-status-bar').classList.remove('selection');
         }
 
         let response;

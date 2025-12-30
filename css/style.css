@@ -479,16 +479,6 @@ select:focus {
     margin-bottom: 0;
 }
 
-#waiting-message {
-    background-color: #0a1628;
-    padding: 0.75rem;
-    border-radius: 6px;
-    margin-bottom: 0.75rem;
-    text-align: center;
-    color: #e94560;
-    font-weight: bold;
-}
-
 /* Action Button Rows */
 #action-buttons {
     display: flex;
@@ -507,6 +497,11 @@ select:focus {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+#situational-actions:empty {
+    margin-top: 0;
 }
 
 .action-btn {
@@ -535,19 +530,24 @@ select:focus {
     background-color: #27ae60;
 }
 
-/* Selection Info */
-#selection-info {
+/* Action Status Bar (combined waiting/selection info) */
+#action-status-bar {
     background-color: #0a1628;
     padding: 0.75rem;
     border-radius: 6px;
     margin-top: 0.5rem;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
-    flex-wrap: wrap;
+    min-height: 2.5rem;
 }
 
-#selection-type {
+#action-status-text {
+    color: #a0aec0;
+}
+
+#action-status-bar.selection #action-status-text {
     color: #e94560;
     font-weight: bold;
 }
