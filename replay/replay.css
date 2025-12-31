@@ -156,3 +156,23 @@
 #sidebar {
     width: 360px;
 }
+
+/* Highlighting for newly placed/moved pieces */
+.settlement.highlighted,
+.city.highlighted {
+    filter: drop-shadow(0 0 8px #ffff00) drop-shadow(0 0 12px #ffff00);
+    stroke: #ffff00;
+    stroke-width: 3;
+}
+
+.robber.highlighted {
+    filter: drop-shadow(0 0 8px #ffff00) drop-shadow(0 0 12px #ffff00);
+}
+
+.road-highlight {
+    stroke: #ffff00;
+    stroke-width: 12;
+    stroke-linecap: round;
+    opacity: 0.6;
+    pointer-events: none;
+}

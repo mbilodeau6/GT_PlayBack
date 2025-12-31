@@ -494,6 +494,7 @@ const Board = {
             Z
         `);
         city.setAttribute('class', `city player-${playerColor}`);
+        city.setAttribute('data-vertex-id', vertex.id);
         this.layers.buildings.appendChild(city);
     },
 

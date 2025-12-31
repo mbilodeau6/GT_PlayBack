@@ -7,6 +7,12 @@ const Replay = {
     gameData: null,
     currentEventIndex: -1, // -1 means "before any events" (empty board)
 
+    // Computed board state at current event index
+    currentBoardState: null,
+
+    // Track the highlighted piece from the current event
+    highlightedPiece: null, // { type: 'road'|'settlement'|'city'|'robber', id: string }
+
     // Zoom state
     zoomLevel: 1.0,
     minZoom: 0.5,
@@ -150,11 +156,172 @@ const Replay = {
     // ==================== RENDERING ====================
 
     renderBoard() {
-        // For now, just render the base game board
-        // TODO: In full implementation, render based on currentEventIndex
-        if (this.gameData) {
-            Board.render(this.gameData);
+        if (!this.gameData) return;
+
+        // Build the board state up to the current event
+        this.currentBoardState = this.buildBoardState(this.currentEventIndex);
+        Board.render(this.currentBoardState);
+
+        // Apply highlighting to the piece from the current event
+        this.applyHighlight();
+    },
+
+    // Build board state by replaying events up to the given index
+    buildBoardState(upToIndex) {
+        // Start with a copy of the base game data (tiles, ports, players, etc.)
+        // but with empty pieces (no roads, settlements, cities)
+        const state = {
+            ...this.gameData,
+            edges: this.gameData.edges.map(e => ({ ...e, playerId: undefined })),
+            vertices: this.gameData.vertices.map(v => ({
+                ...v,
+                building: v.building === 'Blocked' ? 'Blocked' : undefined,
+                playerId: undefined
+            })),
+            robberTileId: this.findDesertTileId() // Robber starts on desert
+        };
+
+        // Clear the highlight
+        this.highlightedPiece = null;
+
+        // Replay events up to and including upToIndex
+        const events = this.gameData.eventRecord || [];
+        for (let i = 0; i <= upToIndex && i < events.length; i++) {
+            const event = events[i];
+            this.applyEvent(state, event, i === upToIndex);
         }
+
+        return state;
+    },
+
+    findDesertTileId() {
+        const desertTile = this.gameData.tiles.find(t => t.resource === 'Desert');
+        return desertTile?.id || null;
+    },
+
+    applyEvent(state, event, isCurrentEvent) {
+        switch (event.action) {
+            case 'PlaceFirstSettlement':
+            case 'PlaceSecondSettlement':
+            case 'PlaceSettlement': {
+                const vertex = state.vertices.find(v => v.id === event.vertexId);
+                if (vertex) {
+                    vertex.building = 'Settlement';
+                    vertex.playerId = event.playerId;
+                    // Block adjacent vertices
+                    this.blockAdjacentVertices(state, event.vertexId);
+                }
+                if (isCurrentEvent) {
+                    this.highlightedPiece = { type: 'settlement', id: event.vertexId };
+                }
+                break;
+            }
+
+            case 'PlaceFirstRoad':
+            case 'PlaceSecondRoad':
+            case 'PlaceRoad': {
+                const edge = state.edges.find(e => e.id === event.edgeId);
+                if (edge) {
+                    edge.playerId = event.playerId;
+                }
+                if (isCurrentEvent) {
+                    this.highlightedPiece = { type: 'road', id: event.edgeId };
+                }
+                break;
+            }
+
+            case 'PlaceCity':
+            case 'UpgradeSettlement': {
+                const vertex = state.vertices.find(v => v.id === event.vertexId);
+                if (vertex) {
+                    vertex.building = 'City';
+                }
+                if (isCurrentEvent) {
+                    this.highlightedPiece = { type: 'city', id: event.vertexId };
+                }
+                break;
+            }
+
+            case 'MoveRobber':
+            case 'PlaceRobber':
+            case 'PlayKnight': {
+                if (event.tileId) {
+                    state.robberTileId = event.tileId;
+                    if (isCurrentEvent) {
+                        this.highlightedPiece = { type: 'robber', id: event.tileId };
+                    }
+                }
+                break;
+            }
+        }
+    },
+
+    blockAdjacentVertices(state, vertexId) {
+        // Find adjacent vertices and mark them as blocked
+        // Adjacent vertices share an edge with this vertex
+        const vertex = state.vertices.find(v => v.id === vertexId);
+        if (!vertex) return;
+
+        // Find edges that include tiles from this vertex
+        const vertexTileIds = new Set(vertex.tileIds);
+
+        state.vertices.forEach(v => {
+            if (v.id === vertexId || v.building) return;
+
+            // Check if this vertex shares an edge with the placed vertex
+            // Two vertices are adjacent if they share exactly 2 tiles
+            const sharedTiles = v.tileIds.filter(tid => vertexTileIds.has(tid));
+            if (sharedTiles.length === 2) {
+                v.building = 'Blocked';
+            }
+        });
+    },
+
+    applyHighlight() {
+        if (!this.highlightedPiece) return;
+
+        const { type, id } = this.highlightedPiece;
+
+        // Add highlight class after a brief delay to ensure DOM is ready
+        setTimeout(() => {
+            let element = null;
+
+            switch (type) {
+                case 'road':
+                    // Draw a highlight overlay for the road
+                    this.highlightRoad(id);
+                    break;
+
+                case 'settlement':
+                case 'city':
+                    element = document.querySelector(`[data-vertex-id="${id}"].settlement, [data-vertex-id="${id}"].city`);
+                    if (element) {
+                        element.classList.add('highlighted');
+                    }
+                    break;
+
+                case 'robber':
+                    element = document.querySelector('.robber');
+                    if (element) {
+                        element.classList.add('highlighted');
+                    }
+                    break;
+            }
+        }, 10);
+    },
+
+    highlightRoad(edgeId) {
+        // Get the edge endpoints and draw a highlight overlay
+        const endpoints = Board.edgePositions.get(edgeId);
+        if (!endpoints) return;
+
+        const highlight = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        highlight.setAttribute('x1', endpoints.x1);
+        highlight.setAttribute('y1', endpoints.y1);
+        highlight.setAttribute('x2', endpoints.x2);
+        highlight.setAttribute('y2', endpoints.y2);
+        highlight.setAttribute('class', 'road-highlight');
+        Board.layers.robber.appendChild(highlight);
     },
 
     renderPlayers() {
@@ -341,12 +508,11 @@ const Replay = {
 
     applyCurrentState() {
         // Update UI
+        this.renderBoard();
         this.renderEventsList();
         this.renderEventDetail();
         this.updatePlaybackPosition();
         this.updatePlaybackButtons();
-
-        // TODO: Actually rebuild board state based on events 0..currentEventIndex
     },
 
     updatePlaybackButtons() {
