@@ -837,7 +837,7 @@ const App = {
         // Render situational text buttons
         const situationalActions = [
             'DiscardCards', 'StealResource', 'RespondToTrade',
-            'AcceptTrade', 'RejectAllOffers', 'SelectTarget'
+            'AcceptTrade', 'RejectAllOffers'
         ];
 
         situationalActions.forEach(actionName => {
@@ -892,13 +892,6 @@ const App = {
                     btn.onclick = () => this.doCancelTrade();
                     break;
 
-                case 'SelectTarget':
-                    if (!isMyTurn) return;
-                    btn.textContent = 'Select Target';
-                    btn.classList.add('highlight');
-                    btn.onclick = () => this.showSelectTargetModal(action.playerIds);
-                    break;
-
                 default:
                     return;
             }
@@ -921,6 +914,12 @@ const App = {
             const player = this.currentGame.players.find(p => p.id === playerId);
             const discardCount = player ? Math.floor(player.resourceCount / 2) : 0;
             this.showDiscardModal({ ...availableActions['DiscardCards'], count: discardCount });
+        }
+
+        // Auto-trigger SelectTarget modal when needed
+        const selectTargetModalOpen = !document.getElementById('select-target-modal').classList.contains('hidden');
+        if (isMyTurn && !selectTargetModalOpen && availableActions['SelectTarget']) {
+            this.showSelectTargetModal(availableActions['SelectTarget'].playerIds);
         }
     },
 
