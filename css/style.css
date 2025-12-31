@@ -924,15 +924,13 @@ select:focus {
 }
 
 .edge-placeholder.selectable {
-    stroke: #00ffff;
-    stroke-dasharray: 4, 4;
-    animation: selection-pulse 1s ease-in-out infinite;
+    opacity: 1;
+    stroke: rgba(0, 255, 255, 0.35);
+    stroke-width: 10;
 }
 
 .edge-placeholder.selectable:hover {
-    opacity: 1;
-    stroke: #7fffff;
-    animation: none;
+    stroke: rgba(0, 255, 255, 0.6);
 }
 
 /* Settlements */
@@ -966,60 +964,41 @@ select:focus {
 }
 
 .vertex-placeholder.selectable {
-    fill: #00ffff;
-    animation: selection-pulse-soft 1s ease-in-out infinite;
+    opacity: 1;
+    fill: rgba(0, 255, 255, 0.2);
+    stroke: #00b3b3;
+    stroke-width: 2;
 }
 
 .vertex-placeholder.selectable:hover {
-    opacity: 1;
-    fill: #7fffff;
-    animation: none;
+    fill: rgba(0, 255, 255, 0.4);
+    stroke: #00ffff;
 }
 
 /* Robber placeholders (for tile selection) */
 .robber-placeholder {
-    fill: #00ffff;
+    fill: rgba(0, 255, 255, 0.2);
+    stroke: #00b3b3;
+    stroke-width: 2;
     cursor: pointer;
-    animation: selection-pulse-soft 1s ease-in-out infinite;
 }
 
 .robber-placeholder:hover {
-    opacity: 1;
-    fill: #7fffff;
-    animation: none;
-}
-
-/* Selection pulse animation - standard (for roads, upgrades) */
-@keyframes selection-pulse {
-    0%, 100% {
-        opacity: 0.1;
-    }
-    50% {
-        opacity: 0.7;
-    }
-}
-
-/* Selection pulse animation - softer (for settlements, robber) */
-@keyframes selection-pulse-soft {
-    0%, 100% {
-        opacity: 0.1;
-    }
-    50% {
-        opacity: 0.5;
-    }
+    fill: rgba(0, 255, 255, 0.4);
+    stroke: #00ffff;
 }
 
 /* Upgrade placeholders (for city upgrade selection) */
 .upgrade-placeholder {
-    fill: #00ffff;
+    fill: rgba(0, 255, 255, 0.2);
+    stroke: #00b3b3;
+    stroke-width: 2;
     cursor: pointer;
-    animation: selection-pulse 1s ease-in-out infinite;
 }
 
 .upgrade-placeholder:hover {
-    opacity: 1;
-    fill: #7fffff;
-    animation: none;
+    fill: rgba(0, 255, 255, 0.4);
+    stroke: #00ffff;
 }
 
 /* Ports */
