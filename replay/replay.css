@@ -176,3 +176,26 @@
     opacity: 0.6;
     pointer-events: none;
 }
+
+/* Larger resource boxes for replay to accommodate deltas */
+#players-list .resource-box {
+    min-width: 2.5rem;
+    padding: 0.25rem 0.4rem;
+}
+
+/* Resource gain/loss highlighting */
+#players-list .resource-box.resource-gain {
+    border: 2px solid #4caf50;
+    box-shadow: 0 0 4px #4caf50;
+}
+
+#players-list .resource-box.resource-loss {
+    border: 2px solid #f44336;
+    box-shadow: 0 0 4px #f44336;
+}
+
+#players-list .resource-box .delta {
+    color: #000;
+    font-weight: bold;
+    margin-left: 0.15rem;
+}

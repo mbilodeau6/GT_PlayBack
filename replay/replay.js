@@ -13,6 +13,10 @@ const Replay = {
     // Track the highlighted piece from the current event
     highlightedPiece: null, // { type: 'road'|'settlement'|'city'|'robber', id: string }
 
+    // Track player resources at current event (starts at zero)
+    playerResources: {}, // playerId -> { Brick: n, Wood: n, ... }
+    resourceDeltas: {},  // playerId -> { Brick: +/-n, Wood: +/-n, ... } for current event
+
     // Zoom state
     zoomLevel: 1.0,
     minZoom: 0.5,
@@ -184,6 +188,19 @@ const Replay = {
         // Clear the highlight
         this.highlightedPiece = null;
 
+        // Initialize all player resources to zero
+        this.playerResources = {};
+        this.resourceDeltas = {};
+        const resourceTypes = ['Brick', 'Wood', 'Ore', 'Grain', 'Wool'];
+        this.gameData.players.forEach(p => {
+            this.playerResources[p.id] = {};
+            this.resourceDeltas[p.id] = {};
+            resourceTypes.forEach(r => {
+                this.playerResources[p.id][r] = 0;
+                this.resourceDeltas[p.id][r] = 0;
+            });
+        });
+
         // Replay events up to and including upToIndex
         const events = this.gameData.eventRecord || [];
         for (let i = 0; i <= upToIndex && i < events.length; i++) {
@@ -200,6 +217,19 @@ const Replay = {
     },
 
     applyEvent(state, event, isCurrentEvent) {
+        // Track resource changes for the current event
+        if (isCurrentEvent) {
+            // Reset deltas for this event
+            Object.keys(this.resourceDeltas).forEach(playerId => {
+                Object.keys(this.resourceDeltas[playerId]).forEach(r => {
+                    this.resourceDeltas[playerId][r] = 0;
+                });
+            });
+        }
+
+        // Apply resource changes from event
+        this.applyResourceChanges(event, isCurrentEvent);
+
         switch (event.action) {
             case 'PlaceFirstSettlement':
             case 'PlaceSecondSettlement':
@@ -252,6 +282,56 @@ const Replay = {
                     }
                 }
                 break;
+            }
+        }
+    },
+
+    applyResourceChanges(event, isCurrentEvent) {
+        const playerId = event.playerId;
+        if (!playerId || !this.playerResources[playerId]) return;
+
+        // Handle resources received
+        if (event.resourcesReceived) {
+            for (const [resource, count] of Object.entries(event.resourcesReceived)) {
+                this.playerResources[playerId][resource] = (this.playerResources[playerId][resource] || 0) + count;
+                if (isCurrentEvent) {
+                    this.resourceDeltas[playerId][resource] = (this.resourceDeltas[playerId][resource] || 0) + count;
+                }
+            }
+        }
+
+        // Handle resources used/spent
+        if (event.resourcesUsed) {
+            for (const [resource, count] of Object.entries(event.resourcesUsed)) {
+                this.playerResources[playerId][resource] = (this.playerResources[playerId][resource] || 0) - count;
+                if (isCurrentEvent) {
+                    this.resourceDeltas[playerId][resource] = (this.resourceDeltas[playerId][resource] || 0) - count;
+                }
+            }
+        }
+
+        // Handle discarded resources
+        if (event.discardedResources) {
+            for (const [resource, count] of Object.entries(event.discardedResources)) {
+                this.playerResources[playerId][resource] = (this.playerResources[playerId][resource] || 0) - count;
+                if (isCurrentEvent) {
+                    this.resourceDeltas[playerId][resource] = (this.resourceDeltas[playerId][resource] || 0) - count;
+                }
+            }
+        }
+
+        // Handle stolen resources (robber/knight)
+        if (event.stolenResource && event.targetPlayerId) {
+            const targetId = event.targetPlayerId;
+            if (this.playerResources[targetId]) {
+                // Target loses the resource
+                this.playerResources[targetId][event.stolenResource] = (this.playerResources[targetId][event.stolenResource] || 0) - 1;
+                // Player gains the resource
+                this.playerResources[playerId][event.stolenResource] = (this.playerResources[playerId][event.stolenResource] || 0) + 1;
+                if (isCurrentEvent) {
+                    this.resourceDeltas[targetId][event.stolenResource] = (this.resourceDeltas[targetId][event.stolenResource] || 0) - 1;
+                    this.resourceDeltas[playerId][event.stolenResource] = (this.resourceDeltas[playerId][event.stolenResource] || 0) + 1;
+                }
             }
         }
     },
@@ -339,8 +419,10 @@ const Replay = {
             card.className = 'player-card';
             card.style.borderLeftColor = this.getPlayerCSSColor(player.color);
 
-            // In replay mode, show all info (no hiding)
-            const resourcesHtml = this.renderResourceBoxes(player.resources);
+            // Use tracked resources (starting at zero) instead of current game state
+            const resources = this.playerResources[player.id] || {};
+            const deltas = this.resourceDeltas[player.id] || {};
+            const resourcesHtml = this.renderResourceBoxes(resources, deltas);
 
             card.innerHTML = `
                 <div class="player-card-header">
@@ -358,13 +440,25 @@ const Replay = {
         });
     },
 
-    renderResourceBoxes(resources) {
+    renderResourceBoxes(resources, deltas = {}) {
         if (!resources) return '';
 
         const order = ['Brick', 'Wood', 'Ore', 'Grain', 'Wool'];
         return order.map(resource => {
             const count = resources[resource] || 0;
-            return `<span class="resource-box resource-${resource}" title="${resource}">${count}</span>`;
+            const delta = deltas[resource] || 0;
+
+            let deltaClass = '';
+            let deltaText = '';
+            if (delta > 0) {
+                deltaClass = 'resource-gain';
+                deltaText = ` <span class="delta">(+${delta})</span>`;
+            } else if (delta < 0) {
+                deltaClass = 'resource-loss';
+                deltaText = ` <span class="delta">(${delta})</span>`;
+            }
+
+            return `<span class="resource-box resource-${resource} ${deltaClass}" title="${resource}">${count}${deltaText}</span>`;
         }).join('');
     },
 
@@ -509,6 +603,7 @@ const Replay = {
     applyCurrentState() {
         // Update UI
         this.renderBoard();
+        this.renderPlayers();
         this.renderEventsList();
         this.renderEventDetail();
         this.updatePlaybackPosition();
