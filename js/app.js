@@ -2537,8 +2537,11 @@ const App = {
             case 'PlayMonopoly':
             case 'PlayMonoploy': {  // Handle backend typo
                 let msg = `${playerName} played a Monopoly card`;
-                if (event.resourcesReceived) {
-                    msg += ` and took ${this.formatResources(event.resourcesReceived)}`;
+                const resourcesText = this.formatResources(event.resourcesReceived);
+                if (resourcesText) {
+                    msg += ` and took ${resourcesText}`;
+                } else {
+                    msg += ` and gained no cards`;
                 }
                 return `${msg}. [${id}]`;
             }
