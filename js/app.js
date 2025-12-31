@@ -18,10 +18,16 @@ const App = {
     maxZoom: 2.5,
     zoomStep: 0.25,
 
-    // Auto-refresh
+    // Auto-refresh with tiered timing
     autoRefreshInterval: null,
-    autoRefreshDelay: 3000, // 3 seconds
-    autoRefreshEnabled: false, // Controlled via Settings toggle
+    autoRefreshEnabled: true, // Enabled by default
+    autoRefreshPhase: 1, // 1 = fast (2s), 2 = slow (4s)
+    autoRefreshCount: 0, // Count within current phase
+    autoRefreshMaxFast: 20, // 20 refreshes at 2s = 40s
+    autoRefreshMaxSlow: 20, // 20 refreshes at 4s = 80s (total 2 min)
+    autoRefreshFastDelay: 2000, // 2 seconds
+    autoRefreshSlowDelay: 4000, // 4 seconds
+    lastEventRecordId: null, // Track last seen event ID for activity detection
 
     // Turn tracking for sound notifications
     previousCurrentPlayerId: null,
@@ -97,6 +103,7 @@ const App = {
         document.getElementById('btn-cancel-accept-trade').addEventListener('click', () => this.closeModal('accept-trade-modal'));
         document.getElementById('btn-close-game-over').addEventListener('click', () => this.closeModal('game-over-modal'));
         document.getElementById('btn-close-trade-rejected').addEventListener('click', () => this.closeTradeRejectedModal());
+        document.getElementById('btn-continue-activity').addEventListener('click', () => this.closeNoActivityModal());
     },
 
     // ==================== ZOOM ====================
@@ -161,7 +168,8 @@ const App = {
 
     loadAutoRefreshSetting() {
         const saved = sessionStorage.getItem('catan_auto_refresh');
-        return saved === 'true';
+        // Default to true if not set
+        return saved === null ? true : saved === 'true';
     },
 
     closeSettings() {
@@ -276,6 +284,9 @@ const App = {
             return;
         }
 
+        // User-initiated refresh resets auto-refresh counters
+        this.onUserActivity();
+
         const response = await API.getGame(this.currentGameId);
         if (response.success) {
             this.handleGameResponse(response);
@@ -365,18 +376,35 @@ const App = {
 
     startAutoRefresh() {
         this.stopAutoRefresh(); // Clear any existing interval
-        if (this.currentGameId) {
-            this.autoRefreshInterval = setInterval(() => {
-                this.autoRefresh();
-            }, this.autoRefreshDelay);
+        if (this.currentGameId && this.autoRefreshEnabled) {
+            this.scheduleNextRefresh();
         }
     },
 
     stopAutoRefresh() {
         if (this.autoRefreshInterval) {
-            clearInterval(this.autoRefreshInterval);
+            clearTimeout(this.autoRefreshInterval);
             this.autoRefreshInterval = null;
         }
+    },
+
+    // Reset auto-refresh counters (called when activity is detected)
+    resetAutoRefreshCounters() {
+        this.autoRefreshPhase = 1;
+        this.autoRefreshCount = 0;
+    },
+
+    // Schedule the next auto-refresh based on current phase
+    scheduleNextRefresh() {
+        if (!this.autoRefreshEnabled || !this.currentGameId) return;
+
+        const delay = this.autoRefreshPhase === 1
+            ? this.autoRefreshFastDelay
+            : this.autoRefreshSlowDelay;
+
+        this.autoRefreshInterval = setTimeout(() => {
+            this.autoRefresh();
+        }, delay);
     },
 
     async autoRefresh() {
@@ -389,24 +417,109 @@ const App = {
         }
 
         // Don't refresh if user is in the middle of a selection or modal
-        if (this.selectionMode) return;
-        if (!document.getElementById('trade-modal').classList.contains('hidden')) return;
-        if (!document.getElementById('discard-modal').classList.contains('hidden')) return;
-        if (!document.getElementById('resource-modal').classList.contains('hidden')) return;
-        if (!document.getElementById('player-trade-modal').classList.contains('hidden')) return;
-        if (!document.getElementById('respond-trade-modal').classList.contains('hidden')) return;
-        if (!document.getElementById('accept-trade-modal').classList.contains('hidden')) return;
-        if (!document.getElementById('game-menu-modal').classList.contains('hidden')) return;
+        if (this.selectionMode) {
+            this.scheduleNextRefresh();
+            return;
+        }
+        if (!document.getElementById('trade-modal').classList.contains('hidden')) {
+            this.scheduleNextRefresh();
+            return;
+        }
+        if (!document.getElementById('discard-modal').classList.contains('hidden')) {
+            this.scheduleNextRefresh();
+            return;
+        }
+        if (!document.getElementById('resource-modal').classList.contains('hidden')) {
+            this.scheduleNextRefresh();
+            return;
+        }
+        if (!document.getElementById('player-trade-modal').classList.contains('hidden')) {
+            this.scheduleNextRefresh();
+            return;
+        }
+        if (!document.getElementById('respond-trade-modal').classList.contains('hidden')) {
+            this.scheduleNextRefresh();
+            return;
+        }
+        if (!document.getElementById('accept-trade-modal').classList.contains('hidden')) {
+            this.scheduleNextRefresh();
+            return;
+        }
+        if (!document.getElementById('game-menu-modal').classList.contains('hidden')) {
+            this.scheduleNextRefresh();
+            return;
+        }
+        if (!document.getElementById('no-activity-modal').classList.contains('hidden')) {
+            // Paused while no-activity modal is open
+            return;
+        }
 
         try {
             const response = await API.getGame(this.currentGameId);
             if (response.success) {
+                // Check for new activity by comparing event record
+                const newEventId = this.getLatestEventId(response.gameState);
+                if (newEventId !== null && newEventId !== this.lastEventRecordId) {
+                    // New activity detected - reset counters
+                    this.resetAutoRefreshCounters();
+                    this.lastEventRecordId = newEventId;
+                }
+
                 this.handleGameResponse(response);
+
+                // Increment counter and check for phase transition
+                this.autoRefreshCount++;
+
+                if (this.autoRefreshPhase === 1 && this.autoRefreshCount >= this.autoRefreshMaxFast) {
+                    // Transition to slow phase
+                    this.autoRefreshPhase = 2;
+                    this.autoRefreshCount = 0;
+                } else if (this.autoRefreshPhase === 2 && this.autoRefreshCount >= this.autoRefreshMaxSlow) {
+                    // No activity for 2 minutes - show modal
+                    this.showNoActivityModal();
+                    return; // Don't schedule next refresh
+                }
+
+                // Schedule next refresh
+                this.scheduleNextRefresh();
+            } else {
+                // On error, still schedule next refresh
+                this.scheduleNextRefresh();
             }
         } catch (e) {
-            // Silently ignore auto-refresh errors
+            // Silently ignore auto-refresh errors, but schedule next
             console.log('Auto-refresh failed:', e);
+            this.scheduleNextRefresh();
         }
+    },
+
+    // Get the latest event ID from the game state's event record
+    getLatestEventId(gameState) {
+        const eventRecord = gameState?.eventRecord;
+        if (!eventRecord || eventRecord.length === 0) return null;
+        // Return the ID of the last event (highest ID = most recent)
+        const lastEvent = eventRecord[eventRecord.length - 1];
+        return lastEvent?.id ?? eventRecord.length; // Fall back to length if no ID
+    },
+
+    // Show the no-activity modal
+    showNoActivityModal() {
+        document.getElementById('no-activity-modal').classList.remove('hidden');
+    },
+
+    // Close the no-activity modal and resume auto-refresh
+    closeNoActivityModal() {
+        document.getElementById('no-activity-modal').classList.add('hidden');
+        // Reset counters and restart auto-refresh
+        this.resetAutoRefreshCounters();
+        this.startAutoRefresh();
+    },
+
+    // Called when user performs an action that indicates activity
+    onUserActivity() {
+        this.resetAutoRefreshCounters();
+        // Update last event ID to current state
+        this.lastEventRecordId = this.getLatestEventId(this.currentGame);
     },
 
     handleGameResponse(response) {
@@ -1161,6 +1274,9 @@ const App = {
             document.getElementById('action-status-bar').classList.remove('selection');
         }
 
+        // User clicked on board - this is activity
+        this.onUserActivity();
+
         let response;
         switch (action) {
             case 'PlaceSettlement':
@@ -1221,6 +1337,7 @@ const App = {
     // ==================== GAME ACTIONS ====================
 
     async doRollDice(playerId) {
+        this.onUserActivity();
         const response = await API.rollDice(this.currentGameId);
 
         if (response.success) {
@@ -1231,6 +1348,7 @@ const App = {
     },
 
     async doEndTurn(playerId) {
+        this.onUserActivity();
         const response = await API.endTurn(this.currentGameId);
 
         if (response.success) {
@@ -1241,6 +1359,7 @@ const App = {
     },
 
     async doBuyDevCard(playerId) {
+        this.onUserActivity();
         const response = await API.buyDevCard(this.currentGameId, playerId);
 
         if (response.success) {
@@ -1251,6 +1370,7 @@ const App = {
     },
 
     async doPlayRoadBuilding(playerId) {
+        this.onUserActivity();
         const response = await API.playRoadBuilding(this.currentGameId, playerId);
 
         if (response.success) {
@@ -1261,6 +1381,7 @@ const App = {
     },
 
     async doUndo(eventId) {
+        this.onUserActivity();
         const response = await API.undo(this.currentGameId, this.playingAsPlayerId, eventId);
 
         if (response.success) {
@@ -1438,6 +1559,7 @@ const App = {
     },
 
     async confirmTrade() {
+        this.onUserActivity();
         const playerId = this.currentGame.phase.currentPlayerId;
 
         // Build offer object
@@ -1564,6 +1686,7 @@ const App = {
     },
 
     async confirmPlayerTrade() {
+        this.onUserActivity();
         // Build offer and request objects with non-zero values only
         const offer = {};
         const request = {};
@@ -1593,6 +1716,7 @@ const App = {
     },
 
     async doCancelTrade() {
+        this.onUserActivity();
         const response = await API.rejectAllOffers(
             this.currentGameId,
             this.playingAsPlayerId
@@ -1654,6 +1778,7 @@ const App = {
     },
 
     async confirmDiscard() {
+        this.onUserActivity();
         this.closeModal('discard-modal');
 
         const response = await API.discardCards(
@@ -1750,6 +1875,7 @@ const App = {
     },
 
     async acceptTradeOffer() {
+        this.onUserActivity();
         this.closeModal('respond-trade-modal');
 
         const response = await API.respondToTrade(
@@ -1766,6 +1892,7 @@ const App = {
     },
 
     async rejectTradeOffer() {
+        this.onUserActivity();
         this.closeModal('respond-trade-modal');
 
         const response = await API.respondToTrade(
@@ -1811,6 +1938,7 @@ const App = {
     },
 
     async doAcceptTrade(acceptedPlayerId) {
+        this.onUserActivity();
         const response = await API.acceptTrade(
             this.currentGameId,
             this.playingAsPlayerId,
@@ -1849,6 +1977,7 @@ const App = {
     },
 
     async doSelectTarget(targetPlayerId) {
+        this.onUserActivity();
         const response = await API.selectTarget(
             this.currentGameId,
             this.playingAsPlayerId,
@@ -1955,6 +2084,7 @@ const App = {
     },
 
     async confirmResourceSelection() {
+        this.onUserActivity();
         this.closeModal('resource-modal');
 
         let response;

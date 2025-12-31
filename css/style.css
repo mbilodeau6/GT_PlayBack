@@ -1217,6 +1217,24 @@ select:focus {
     padding: 0.5rem 1.5rem;
 }
 
+/* No Activity Modal */
+#no-activity-modal .modal-content {
+    text-align: center;
+}
+
+#no-activity-modal p {
+    margin-bottom: 1.5rem;
+}
+
+#no-activity-modal .button-group {
+    justify-content: center;
+}
+
+#no-activity-modal .button-group button {
+    flex: none;
+    padding: 0.5rem 1.5rem;
+}
+
 /* Game Over Modal */
 .game-over-content {
     text-align: center;
