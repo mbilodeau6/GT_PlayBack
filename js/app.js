@@ -37,6 +37,9 @@ const App = {
     lastNotificationEventId: null,
     activeNotifications: new Map(), // playerId -> { timeoutId, gains, expiresAt }
 
+    // Action button state tracking (to avoid unnecessary DOM rebuilds)
+    lastActionSignature: null,
+
     init() {
         // Initialize board
         const svgElement = document.getElementById('board');
@@ -283,6 +286,8 @@ const App = {
         // Set notification tracking to current state so we don't show historical gains
         this.lastNotificationEventId = this.getLatestEventId(gameState);
         this.clearActiveNotifications();
+        // Reset action signature to force button rebuild on new game
+        this.lastActionSignature = null;
     },
 
     // Clear all active notifications and their timeouts
@@ -938,10 +943,6 @@ const App = {
         const statusText = document.getElementById('action-status-text');
         const cancelBtn = document.getElementById('btn-cancel-selection');
 
-        row1.innerHTML = '';
-        row2.innerHTML = '';
-        situationalContainer.innerHTML = '';
-
         // Check if there's a RespondToTrade action (any player can respond)
         const hasRespondToTrade = this.possibleActions?.some(a => a.action === 'RespondToTrade');
 
@@ -996,6 +997,54 @@ const App = {
             this.availablePlacementActions = null;
             Board.clearSelectableElements();
         }
+
+        // Check if "Playing As" player has any playable dev cards (for row2 visibility)
+        const playableDevCardTypes = ['Knight', 'RoadBuilding', 'YearOfPlenty', 'Monopoly'];
+        const playingAsPlayer = this.currentGame?.players?.find(p => p.id === this.playingAsPlayerId);
+        const hasPlayableDevCards = playingAsPlayer?.devCardsReadyToPlay?.some(card => playableDevCardTypes.includes(card)) || false;
+
+        // Check for situational actions
+        const situationalActionTypes = ['DiscardCards', 'StealResource', 'RespondToTrade', 'AcceptTrade', 'RejectAllOffers'];
+        const activeSituationalActions = situationalActionTypes.filter(actionName => {
+            if (actionName === 'RespondToTrade') {
+                return !!availableActions[actionName] || canRespondToTrade;
+            }
+            return !!availableActions[actionName];
+        });
+
+        // Compute a signature for the current button state to avoid unnecessary DOM rebuilds
+        const actionSignature = JSON.stringify({
+            isMyTurn,
+            phaseState,
+            hasPlayableDevCards,
+            playingAsPlayerId: this.playingAsPlayerId,
+            currentPlayerId: this.currentGame?.phase?.currentPlayerId,
+            availableActionKeys: Object.keys(availableActions).sort(),
+            activeSituationalActions,
+            canRespondToTrade,
+            pendingResponseCount: pendingResponses.filter(r => r.responseType === 'Accept').length,
+            discardCount: isMyTurn && availableActions['DiscardCards']
+                ? Math.floor((this.currentGame?.players?.find(p => p.id === this.currentGame?.phase?.currentPlayerId)?.resourceCount || 0) / 2)
+                : 0
+        });
+
+        // Skip DOM rebuild if signature hasn't changed (prevents click interruption during auto-refresh)
+        if (actionSignature === this.lastActionSignature) {
+            // Still need to update status message (it may reference player names that don't affect signature)
+            this.updateStatusMessage(
+                statusBar, statusText, cancelBtn,
+                isMyTurn, hasRespondToTrade, canRespondToTrade,
+                phaseState, placementActions, availableActions,
+                this._lastRow1Buttons || [], this._lastRow2Buttons || [], hasPlayableDevCards
+            );
+            return;
+        }
+        this.lastActionSignature = actionSignature;
+
+        // Clear existing buttons only when we need to rebuild
+        row1.innerHTML = '';
+        row2.innerHTML = '';
+        situationalContainer.innerHTML = '';
 
         // Define fixed buttons for Row 1: Roll, Buy Dev Card, Trade w Bank, Trade w Players, Undo, End Turn
         const row1Buttons = [
@@ -1096,10 +1145,9 @@ const App = {
             row1.appendChild(btn);
         });
 
-        // Check if "Playing As" player has any playable dev cards (Knight, RoadBuilding, YearOfPlenty, Monopoly)
-        const playableDevCardTypes = ['Knight', 'RoadBuilding', 'YearOfPlenty', 'Monopoly'];
-        const playingAsPlayer = this.currentGame?.players?.find(p => p.id === this.playingAsPlayerId);
-        const hasPlayableDevCards = playingAsPlayer?.devCardsReadyToPlay?.some(card => playableDevCardTypes.includes(card)) || false;
+        // Store button configs for status message updates when signature doesn't change
+        this._lastRow1Buttons = row1Buttons;
+        this._lastRow2Buttons = row2Buttons;
 
         // Show/hide Row 2 based on whether player has playable dev cards
         if (hasPlayableDevCards) {
