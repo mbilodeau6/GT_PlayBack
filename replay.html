@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Presidio - Replay</title>
+    <title>Replay</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="replay/replay.css">
@@ -11,13 +11,27 @@
 <body>
     <div id="app">
         <header>
-            <h1>Presidio <span class="replay-badge">Replay</span></h1>
+            <h1>Replay</h1>
             <div id="game-info">
                 <div class="game-id-input-group">
                     <input type="text" id="game-id-input" placeholder="Game ID...">
                     <button id="btn-load-game" class="small-btn">Load</button>
                 </div>
-                <span id="game-status">No game loaded</span>
+                <div id="playback-controls">
+                    <button id="btn-restart" class="icon-btn playback-btn" title="Restart" disabled>
+                        <i class="fa-solid fa-backward-fast"></i>
+                    </button>
+                    <button id="btn-step-back" class="icon-btn playback-btn" title="Step Back" disabled>
+                        <i class="fa-solid fa-backward-step"></i>
+                    </button>
+                    <button id="btn-play-pause" class="icon-btn playback-btn" title="Play/Pause" disabled>
+                        <i class="fa-solid fa-play"></i>
+                    </button>
+                    <button id="btn-step-forward" class="icon-btn playback-btn" title="Step Forward" disabled>
+                        <i class="fa-solid fa-forward-step"></i>
+                    </button>
+                    <span id="playback-position"><span id="current-event">0</span> / <span id="total-events">0</span></span>
+                </div>
             </div>
             <div class="header-buttons">
                 <button id="btn-settings" class="icon-btn" title="Settings"><i class="fa-solid fa-gear"></i></button>
@@ -44,22 +58,11 @@
                     </div>
                 </section>
 
-                <!-- Playback Controls -->
-                <section id="playback-section">
-                    <h2>Playback</h2>
-                    <div id="playback-controls">
-                        <button id="btn-step-back" class="playback-btn" title="Step Back" disabled>
-                            <i class="fa-solid fa-backward-step"></i>
-                        </button>
-                        <button id="btn-play-pause" class="playback-btn" title="Play/Pause" disabled>
-                            <i class="fa-solid fa-play"></i>
-                        </button>
-                        <button id="btn-step-forward" class="playback-btn" title="Step Forward" disabled>
-                            <i class="fa-solid fa-forward-step"></i>
-                        </button>
-                    </div>
-                    <div id="playback-position">
-                        <span id="current-event">0</span> / <span id="total-events">0</span>
+                <!-- Event Detail Section -->
+                <section id="event-detail-section">
+                    <h2>Event Detail</h2>
+                    <div id="event-detail">
+                        <div class="empty-state">Select an event to see details</div>
                     </div>
                 </section>
 
@@ -88,6 +91,17 @@
                 <div class="button-group">
                     <button id="btn-save-settings">Save</button>
                     <button id="btn-cancel-settings">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Modal -->
+        <div id="error-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>Error</h2>
+                <p id="error-message"></p>
+                <div class="button-group">
+                    <button id="btn-close-error">Close</button>
                 </div>
             </div>
         </div>

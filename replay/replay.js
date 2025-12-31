@@ -43,7 +43,11 @@ const Replay = {
         document.getElementById('btn-save-settings').addEventListener('click', () => this.saveSettings());
         document.getElementById('btn-cancel-settings').addEventListener('click', () => this.closeSettings());
 
+        // Error modal
+        document.getElementById('btn-close-error').addEventListener('click', () => this.closeError());
+
         // Playback controls
+        document.getElementById('btn-restart').addEventListener('click', () => this.restart());
         document.getElementById('btn-step-back').addEventListener('click', () => this.stepBack());
         document.getElementById('btn-step-forward').addEventListener('click', () => this.stepForward());
         document.getElementById('btn-play-pause').addEventListener('click', () => this.togglePlayPause());
@@ -89,38 +93,40 @@ const Replay = {
         document.getElementById('api-url-input').value = API.baseUrl;
     },
 
+    // ==================== ERROR MODAL ====================
+
+    showError(message) {
+        document.getElementById('error-message').textContent = message;
+        document.getElementById('error-modal').classList.remove('hidden');
+    },
+
+    closeError() {
+        document.getElementById('error-modal').classList.add('hidden');
+    },
+
     // ==================== GAME LOADING ====================
 
     async loadGame() {
         const gameId = document.getElementById('game-id-input').value.trim();
         if (!gameId) {
-            this.setStatus('Please enter a Game ID', 'error');
+            this.showError('Please enter a Game ID');
             return;
         }
-
-        this.setStatus('Loading...', '');
 
         try {
             const response = await API.getGame(gameId);
             if (response.success) {
                 this.gameData = response.gameState;
                 this.currentEventIndex = -1;
-                this.setStatus(`Loaded: ${gameId.substring(0, 8)}...`, 'success');
                 this.renderInitialState();
                 this.enablePlaybackControls();
             } else {
-                this.setStatus(`Error: ${response.errorMessage}`, 'error');
+                this.showError(response.errorMessage || 'Failed to load game');
             }
         } catch (e) {
-            this.setStatus(`Failed to load game`, 'error');
+            this.showError('Failed to load game: ' + e.message);
             console.error(e);
         }
-    },
-
-    setStatus(message, type) {
-        const statusEl = document.getElementById('game-status');
-        statusEl.textContent = message;
-        statusEl.className = type || '';
     },
 
     renderInitialState() {
@@ -128,6 +134,7 @@ const Replay = {
         this.renderBoard();
         this.renderPlayers();
         this.renderEventsList();
+        this.renderEventDetail();
         this.updatePlaybackPosition();
     },
 
@@ -135,8 +142,9 @@ const Replay = {
         const hasEvents = this.gameData?.eventRecord?.length > 0;
         document.getElementById('btn-step-forward').disabled = !hasEvents;
         document.getElementById('btn-play-pause').disabled = !hasEvents;
-        // Step back disabled at start
+        // Step back and restart disabled at start (before any events)
         document.getElementById('btn-step-back').disabled = true;
+        document.getElementById('btn-restart').disabled = true;
     },
 
     // ==================== RENDERING ====================
@@ -214,8 +222,9 @@ const Replay = {
                 item.classList.add('current');
             }
 
-            const description = this.formatEvent(event);
-            item.innerHTML = `${description}<span class="event-id">[${event.id || index + 1}]</span>`;
+            const playerName = this.getPlayerName(event.playerId);
+            const eventId = event.id || index + 1;
+            item.innerHTML = `<span class="event-id">${eventId}</span><span class="event-action">${event.action}</span><span class="event-player">${playerName}</span>`;
 
             item.addEventListener('click', () => this.jumpToEvent(index));
             container.appendChild(item);
@@ -226,6 +235,26 @@ const Replay = {
         if (currentItem) {
             currentItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
+    },
+
+    renderEventDetail() {
+        const container = document.getElementById('event-detail');
+        const events = this.gameData?.eventRecord || [];
+
+        if (this.currentEventIndex < 0 || this.currentEventIndex >= events.length) {
+            container.innerHTML = '<div class="empty-state">Select an event to see details</div>';
+            return;
+        }
+
+        const event = events[this.currentEventIndex];
+        const formattedJson = JSON.stringify(event, null, 2);
+        container.innerHTML = `<pre class="event-json">${this.escapeHtml(formattedJson)}</pre>`;
+    },
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     },
 
     formatEvent(event) {
@@ -280,6 +309,11 @@ const Replay = {
 
     // ==================== PLAYBACK CONTROLS ====================
 
+    restart() {
+        this.currentEventIndex = -1;
+        this.applyCurrentState();
+    },
+
     stepForward() {
         const events = this.gameData?.eventRecord || [];
         if (this.currentEventIndex < events.length - 1) {
@@ -308,6 +342,7 @@ const Replay = {
     applyCurrentState() {
         // Update UI
         this.renderEventsList();
+        this.renderEventDetail();
         this.updatePlaybackPosition();
         this.updatePlaybackButtons();
 
@@ -316,8 +351,12 @@ const Replay = {
 
     updatePlaybackButtons() {
         const events = this.gameData?.eventRecord || [];
-        document.getElementById('btn-step-back').disabled = this.currentEventIndex < 0;
-        document.getElementById('btn-step-forward').disabled = this.currentEventIndex >= events.length - 1;
+        const atStart = this.currentEventIndex < 0;
+        const atEnd = this.currentEventIndex >= events.length - 1;
+
+        document.getElementById('btn-restart').disabled = atStart;
+        document.getElementById('btn-step-back').disabled = atStart;
+        document.getElementById('btn-step-forward').disabled = atEnd;
     }
 };
 

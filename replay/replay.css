@@ -1,14 +1,10 @@
 /* Replay-specific styles */
 
-/* Header modifications */
-.replay-badge {
-    font-size: 0.7rem;
-    background-color: #8b5cf6;
-    color: white;
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    margin-left: 0.5rem;
-    vertical-align: middle;
+/* Header layout */
+#game-info {
+    display: flex;
+    align-items: center;
+    gap: 3rem;
 }
 
 .game-id-input-group {
@@ -29,9 +25,35 @@
     white-space: nowrap;
 }
 
-#game-status {
-    color: #aaa;
+/* Playback controls in header */
+#playback-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+#playback-controls .playback-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    margin: 0;
+    font-size: 1rem;
+}
+
+#playback-controls .playback-btn:disabled {
+    opacity: 0.4;
+}
+
+#playback-position {
     font-size: 0.9rem;
+    color: #aaa;
+    margin-left: 0.5rem;
+    min-width: 70px;
+}
+
+#current-event {
+    color: #e94560;
+    font-weight: bold;
 }
 
 /* Empty state placeholder */
@@ -40,44 +62,6 @@
     font-style: italic;
     text-align: center;
     padding: 1rem;
-}
-
-/* Playback section */
-#playback-section {
-    text-align: center;
-}
-
-#playback-controls {
-    display: flex;
-    justify-content: center;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
-}
-
-.playback-btn {
-    width: 48px;
-    height: 48px;
-    padding: 0;
-    margin: 0;
-    font-size: 1.25rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-}
-
-.playback-btn:disabled {
-    opacity: 0.4;
-}
-
-#playback-position {
-    font-size: 0.9rem;
-    color: #aaa;
-}
-
-#current-event {
-    color: #e94560;
-    font-weight: bold;
 }
 
 /* Events list */
@@ -113,14 +97,54 @@
     color: #666;
 }
 
+/* Event list columns */
+.event-item {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
 .event-item .event-id {
     color: #555;
     font-size: 0.7rem;
-    margin-left: 0.5rem;
+    min-width: 2rem;
+    text-align: right;
+}
+
+.event-item .event-action {
+    flex: 1;
+    color: inherit;
+}
+
+.event-item .event-player {
+    color: #888;
+    font-size: 0.75rem;
 }
 
 .event-item.current .event-id {
     color: #888;
+}
+
+.event-item.current .event-player {
+    color: #aaa;
+}
+
+/* Event Detail Section */
+#event-detail {
+    background-color: #0a1628;
+    border-radius: 6px;
+    padding: 0.5rem;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.event-json {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.75rem;
+    color: #8bc34a;
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 /* Player cards in replay mode - show all info */
