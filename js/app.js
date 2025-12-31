@@ -799,12 +799,23 @@ const App = {
             row1.appendChild(btn);
         });
 
-        // Render Row 2 buttons
-        row2Buttons.forEach(config => {
-            const isEnabled = isMyTurn && !!availableActions[config.action];
-            const btn = createIconButton(config, isEnabled);
-            row2.appendChild(btn);
-        });
+        // Check if "Playing As" player has any playable dev cards (Knight, RoadBuilding, YearOfPlenty, Monopoly)
+        const playableDevCardTypes = ['Knight', 'RoadBuilding', 'YearOfPlenty', 'Monopoly'];
+        const playingAsPlayer = this.currentGame?.players?.find(p => p.id === this.playingAsPlayerId);
+        const hasPlayableDevCards = playingAsPlayer?.devCardsReadyToPlay?.some(card => playableDevCardTypes.includes(card)) || false;
+
+        // Show/hide Row 2 based on whether player has playable dev cards
+        if (hasPlayableDevCards) {
+            row2.classList.remove('hidden');
+            // Render Row 2 buttons
+            row2Buttons.forEach(config => {
+                const isEnabled = isMyTurn && !!availableActions[config.action];
+                const btn = createIconButton(config, isEnabled);
+                row2.appendChild(btn);
+            });
+        } else {
+            row2.classList.add('hidden');
+        }
 
         // Render situational text buttons
         const situationalActions = [
@@ -883,7 +894,7 @@ const App = {
             statusBar, statusText, cancelBtn,
             isMyTurn, hasRespondToTrade, canRespondToTrade,
             phaseState, placementActions, availableActions,
-            row1Buttons, row2Buttons
+            row1Buttons, row2Buttons, hasPlayableDevCards
         );
 
         // Auto-trigger DiscardCards modal when needed
@@ -897,7 +908,7 @@ const App = {
     },
 
     // Update the status box with appropriate message based on game state
-    updateStatusMessage(statusBar, statusText, cancelBtn, isMyTurn, hasRespondToTrade, canRespondToTrade, phaseState, placementActions, availableActions, row1Buttons, row2Buttons) {
+    updateStatusMessage(statusBar, statusText, cancelBtn, isMyTurn, hasRespondToTrade, canRespondToTrade, phaseState, placementActions, availableActions, row1Buttons, row2Buttons, hasPlayableDevCards) {
         cancelBtn.classList.add('hidden');
 
         // Not my turn - show waiting message (neutral color)
@@ -921,8 +932,9 @@ const App = {
         const hasBoardActions = placementActions.length > 0;
 
         // Count ALL enabled button actions (including Undo and EndTurn)
-        const allButtonConfigs = [...row1Buttons, ...row2Buttons];
-        const enabledButtons = allButtonConfigs.filter(config => !!availableActions[config.action]);
+        // Only include row2 buttons if the dev card row is visible
+        const visibleButtonConfigs = hasPlayableDevCards ? [...row1Buttons, ...row2Buttons] : [...row1Buttons];
+        const enabledButtons = visibleButtonConfigs.filter(config => !!availableActions[config.action]);
 
         // Check for situational actions (treated as buttons)
         const situationalActionTypes = ['DiscardCards', 'StealResource', 'RespondToTrade', 'AcceptTrade', 'RejectAllOffers', 'SelectTarget'];
