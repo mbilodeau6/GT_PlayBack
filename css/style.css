@@ -222,17 +222,15 @@ main {
     padding: 0.15rem 0.35rem;
     border-radius: 3px;
     margin-left: 0.25rem;
-    vertical-align: middle;
+    vertical-align: baseline;
+    position: relative;
+    top: -2px;
 }
 
-.road-badge {
-    background-color: #8b4513;
-    color: #fff;
-}
-
+.road-badge,
 .army-badge {
-    background-color: #4a0080;
-    color: #fff;
+    background-color: #fef08a;
+    color: #000;
 }
 
 .player-stats {
