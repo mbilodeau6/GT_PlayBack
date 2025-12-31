@@ -646,8 +646,8 @@ const App = {
             const hasLongestRoad = this.currentGame.hasLongestRoadPlayerId === player.id;
             const hasLargestArmy = this.currentGame.hasLargestArmyPlayerId === player.id;
             const badges = [];
-            if (hasLongestRoad) badges.push('<span class="player-badge road-badge" title="Longest Road">LR</span>');
-            if (hasLargestArmy) badges.push('<span class="player-badge army-badge" title="Largest Army">LA</span>');
+            if (hasLongestRoad) badges.push('<span class="player-badge road-badge" title="Longest Road"><i class="fa-solid fa-ruler-horizontal"></i></span>');
+            if (hasLargestArmy) badges.push('<span class="player-badge army-badge" title="Largest Army"><i class="fa-solid fa-shield"></i></span>');
 
             // Count played knights
             const knightCount = (player.devCardsPlayed || []).filter(c => c === 'Knight').length;
