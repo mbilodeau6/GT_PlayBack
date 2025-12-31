@@ -33,6 +33,10 @@ const App = {
     previousCurrentPlayerId: null,
     gameOverSoundPlayed: false,
 
+    // Notification tracking for resource/dev card gains
+    lastNotificationEventId: null,
+    activeNotifications: new Map(), // playerId -> { timeoutId, gains, expiresAt }
+
     init() {
         // Initialize board
         const svgElement = document.getElementById('board');
@@ -522,6 +526,147 @@ const App = {
         this.lastEventRecordId = this.getLatestEventId(this.currentGame);
     },
 
+    // ==================== GAIN NOTIFICATIONS ====================
+
+    // Process new events and show notifications for resource/dev card gains
+    processGainNotifications(gameState) {
+        const eventRecord = gameState?.eventRecord;
+        if (!eventRecord || eventRecord.length === 0) return;
+
+        // Find new events since last notification check
+        const newEvents = [];
+        let foundLastProcessed = this.lastNotificationEventId === null;
+
+        for (const event of eventRecord) {
+            if (foundLastProcessed) {
+                newEvents.push(event);
+            } else if (event.id === this.lastNotificationEventId) {
+                foundLastProcessed = true;
+            }
+        }
+
+        // Update last processed ID
+        const lastEvent = eventRecord[eventRecord.length - 1];
+        this.lastNotificationEventId = lastEvent?.id ?? null;
+
+        // If this is the first load, don't show notifications
+        if (!foundLastProcessed && this.lastNotificationEventId === null) {
+            return;
+        }
+
+        // Collect gains per player from new events
+        const playerGains = new Map(); // playerId -> { resources: {}, devCard: boolean }
+
+        for (const event of newEvents) {
+            const playerId = event.playerId;
+            if (!playerId) continue;
+
+            if (!playerGains.has(playerId)) {
+                playerGains.set(playerId, { resources: {}, devCard: false });
+            }
+            const gains = playerGains.get(playerId);
+
+            // Check for resource gains
+            if (event.resourcesReceived) {
+                for (const [resource, count] of Object.entries(event.resourcesReceived)) {
+                    if (count > 0) {
+                        gains.resources[resource] = (gains.resources[resource] || 0) + count;
+                    }
+                }
+            }
+
+            // Check for dev card purchase
+            if (event.action === 'BuyDevelopmentCard') {
+                gains.devCard = true;
+            }
+        }
+
+        // Show notifications for players with gains
+        for (const [playerId, gains] of playerGains) {
+            const hasResources = Object.values(gains.resources).some(c => c > 0);
+            if (hasResources || gains.devCard) {
+                this.showGainNotification(playerId, gains);
+            }
+        }
+    },
+
+    // Show a gain notification on a player's card
+    showGainNotification(playerId, gains) {
+        const notificationEl = document.querySelector(`.player-card[data-player-id="${playerId}"] .gain-notification`);
+        if (!notificationEl) return;
+
+        // Clear any existing notification timeout for this player
+        if (this.activeNotifications.has(playerId)) {
+            clearTimeout(this.activeNotifications.get(playerId).timeoutId);
+        }
+
+        // Build notification content
+        const html = this.buildGainNotificationHtml(gains);
+        notificationEl.innerHTML = html;
+
+        // Trigger fade in
+        requestAnimationFrame(() => {
+            notificationEl.classList.add('visible');
+        });
+
+        const expiresAt = Date.now() + 3000;
+
+        // Set timeout to fade out and clear
+        const timeoutId = setTimeout(() => {
+            notificationEl.classList.remove('visible');
+            this.activeNotifications.delete(playerId);
+        }, 3000);
+
+        this.activeNotifications.set(playerId, { timeoutId, gains, expiresAt });
+    },
+
+    // Build the HTML for a gain notification
+    buildGainNotificationHtml(gains) {
+        let html = '';
+
+        // Add resource boxes with counts
+        const resourceOrder = ['Wood', 'Brick', 'Wool', 'Grain', 'Ore'];
+        for (const resource of resourceOrder) {
+            const count = gains.resources[resource];
+            if (count && count > 0) {
+                html += `<span class="resource-box resource-${resource}" title="${resource}">+${count}</span>`;
+            }
+        }
+
+        // Add dev card indicator (purple box)
+        if (gains.devCard) {
+            html += `<span class="resource-box dev-card-box" title="Development Card"></span>`;
+        }
+
+        return html;
+    },
+
+    // Re-apply active notifications after DOM rebuild (called after renderPlayers)
+    reapplyActiveNotifications() {
+        const now = Date.now();
+
+        for (const [playerId, data] of this.activeNotifications) {
+            // Skip if already expired
+            if (now >= data.expiresAt) {
+                clearTimeout(data.timeoutId);
+                this.activeNotifications.delete(playerId);
+                continue;
+            }
+
+            const notificationEl = document.querySelector(`.player-card[data-player-id="${playerId}"] .gain-notification`);
+            if (!notificationEl) continue;
+
+            // Rebuild and show the notification without triggering transition
+            notificationEl.innerHTML = this.buildGainNotificationHtml(data.gains);
+            // Temporarily disable transition, set visible, then re-enable
+            notificationEl.style.transition = 'none';
+            notificationEl.classList.add('visible');
+            // Force reflow to apply the change immediately
+            notificationEl.offsetHeight;
+            notificationEl.style.transition = '';
+        }
+    },
+
     handleGameResponse(response) {
         const previousPlayerId = this.previousCurrentPlayerId;
         const newPlayerId = response.gameState?.phase?.currentPlayerId;
@@ -532,6 +677,12 @@ const App = {
 
         this.displayGame();
         this.updateUI();
+
+        // Re-apply any active notifications that were cleared by DOM rebuild
+        this.reapplyActiveNotifications();
+
+        // Process gain notifications after displayGame (so player cards exist)
+        this.processGainNotifications(response.gameState);
 
         // Check for turn change and play sound if it's now "Playing as" player's turn
         if (newPlayerId && newPlayerId !== previousPlayerId && newPlayerId === this.playingAsPlayerId) {
@@ -636,6 +787,7 @@ const App = {
         this.currentGame.players.forEach(player => {
             const card = document.createElement('div');
             card.className = 'player-card';
+            card.dataset.playerId = player.id; // For notification targeting
             card.style.borderLeftColor = this.getPlayerCSSColor(player.color);
 
             if (this.currentGame.phase?.currentPlayerId === player.id) {
@@ -661,6 +813,7 @@ const App = {
             }
 
             let html = `
+                <div class="gain-notification"></div>
                 <div class="player-card-header">
                     <div class="player-name">${player.name} ${player.isBot ? '(Bot)' : ''} ${badges.join(' ')}</div>
                     ${isSetup ? `<button class="remove-btn" data-player-id="${player.id}">Remove</button>` : ''}
