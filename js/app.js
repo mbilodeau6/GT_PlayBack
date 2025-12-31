@@ -247,7 +247,7 @@ const App = {
 
         const response = await API.createGame(gameType);
         if (response.success) {
-            this.resetGameStateFlags();
+            this.resetGameStateFlags(response.gameState);
             this.handleGameResponse(response);
             this.saveGameId(response.gameState.id);
             this.populateMenuPlayerDropdown();
@@ -266,7 +266,7 @@ const App = {
 
         const response = await API.getGame(gameId);
         if (response.success) {
-            this.resetGameStateFlags();
+            this.resetGameStateFlags(response.gameState);
             this.handleGameResponse(response);
             this.saveGameId(gameId);
             this.populateMenuPlayerDropdown();
@@ -277,11 +277,11 @@ const App = {
     },
 
     // Reset flags when loading a new game
-    resetGameStateFlags() {
+    resetGameStateFlags(gameState) {
         this.previousCurrentPlayerId = null;
         this.gameOverSoundPlayed = false;
-        // Clear notification tracking so we don't show historical gains
-        this.lastNotificationEventId = null;
+        // Set notification tracking to current state so we don't show historical gains
+        this.lastNotificationEventId = this.getLatestEventId(gameState);
         this.clearActiveNotifications();
     },
 
