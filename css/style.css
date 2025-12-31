@@ -1199,6 +1199,24 @@ select:focus {
     background-color: #245080;
 }
 
+/* Trade Rejected Modal */
+#trade-rejected-modal .modal-content {
+    text-align: center;
+}
+
+#trade-rejected-modal p {
+    margin-bottom: 1.5rem;
+}
+
+#trade-rejected-modal .button-group {
+    justify-content: center;
+}
+
+#trade-rejected-modal .button-group button {
+    flex: none;
+    padding: 0.5rem 1.5rem;
+}
+
 /* Game Over Modal */
 .game-over-content {
     text-align: center;

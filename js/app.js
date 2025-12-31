@@ -96,6 +96,7 @@ const App = {
         document.getElementById('btn-reject-trade').addEventListener('click', () => this.rejectTradeOffer());
         document.getElementById('btn-cancel-accept-trade').addEventListener('click', () => this.closeModal('accept-trade-modal'));
         document.getElementById('btn-close-game-over').addEventListener('click', () => this.closeModal('game-over-modal'));
+        document.getElementById('btn-close-trade-rejected').addEventListener('click', () => this.closeTradeRejectedModal());
     },
 
     // ==================== ZOOM ====================
@@ -676,6 +677,22 @@ const App = {
         const canRespondToTrade = isInTradingPhase &&
                                    this.playingAsPlayerId &&
                                    this.playingAsPlayerId !== tradeInitiatorId;
+
+        // Auto-cancel trade if all opponents have rejected
+        if (isInTradingPhase && tradeInitiatorId === this.playingAsPlayerId) {
+            const otherPlayers = this.currentGame?.players?.filter(p => p.id !== tradeInitiatorId) || [];
+            const rejectResponses = pendingResponses.filter(r => r.responseType === 'Reject');
+            const allRejected = otherPlayers.length > 0 && rejectResponses.length === otherPlayers.length;
+
+            if (allRejected) {
+                // Show modal to inform user, then cancel on close
+                const modal = document.getElementById('trade-rejected-modal');
+                if (modal.classList.contains('hidden')) {
+                    modal.classList.remove('hidden');
+                }
+                return; // Exit early, closeTradeRejectedModal will handle the cancel
+            }
+        }
 
         // Check if it's the selected player's turn
         const isMyTurn = this.isMyTurn();
@@ -1966,6 +1983,12 @@ const App = {
 
     closeModal(modalId) {
         document.getElementById(modalId).classList.add('hidden');
+    },
+
+    // Close the trade rejected modal and auto-cancel the trade
+    closeTradeRejectedModal() {
+        document.getElementById('trade-rejected-modal').classList.add('hidden');
+        this.doCancelTrade();
     },
 
     // ==================== GAME OVER ====================
