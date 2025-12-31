@@ -1,0 +1,134 @@
+/* Replay-specific styles */
+
+/* Header modifications */
+.replay-badge {
+    font-size: 0.7rem;
+    background-color: #8b5cf6;
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+}
+
+.game-id-input-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.game-id-input-group input {
+    width: 280px;
+    margin-bottom: 0;
+    font-size: 0.85rem;
+}
+
+.game-id-input-group .small-btn {
+    padding: 0.5rem 1rem;
+    margin: 0;
+    white-space: nowrap;
+}
+
+#game-status {
+    color: #aaa;
+    font-size: 0.9rem;
+}
+
+/* Empty state placeholder */
+.empty-state {
+    color: #666;
+    font-style: italic;
+    text-align: center;
+    padding: 1rem;
+}
+
+/* Playback section */
+#playback-section {
+    text-align: center;
+}
+
+#playback-controls {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.playback-btn {
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    margin: 0;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.playback-btn:disabled {
+    opacity: 0.4;
+}
+
+#playback-position {
+    font-size: 0.9rem;
+    color: #aaa;
+}
+
+#current-event {
+    color: #e94560;
+    font-weight: bold;
+}
+
+/* Events list */
+#events-list {
+    max-height: 400px;
+    overflow-y: auto;
+    background-color: #0a1628;
+    border-radius: 6px;
+    padding: 0.5rem;
+}
+
+.event-item {
+    padding: 0.5rem;
+    border-radius: 4px;
+    margin-bottom: 0.25rem;
+    font-size: 0.8rem;
+    color: #aaa;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.event-item:hover {
+    background-color: #1a3a5c;
+}
+
+.event-item.current {
+    background-color: #0f3460;
+    color: #fff;
+    border-left: 3px solid #e94560;
+}
+
+.event-item.past {
+    color: #666;
+}
+
+.event-item .event-id {
+    color: #555;
+    font-size: 0.7rem;
+    margin-left: 0.5rem;
+}
+
+.event-item.current .event-id {
+    color: #888;
+}
+
+/* Player cards in replay mode - show all info */
+#players-list .player-card {
+    margin-bottom: 0.75rem;
+}
+
+/* Make sidebar slightly wider for replay to fit more event text */
+#sidebar {
+    width: 360px;
+}

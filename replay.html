@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presidio - Replay</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="replay/replay.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>Presidio <span class="replay-badge">Replay</span></h1>
+            <div id="game-info">
+                <div class="game-id-input-group">
+                    <input type="text" id="game-id-input" placeholder="Game ID...">
+                    <button id="btn-load-game" class="small-btn">Load</button>
+                </div>
+                <span id="game-status">No game loaded</span>
+            </div>
+            <div class="header-buttons">
+                <button id="btn-settings" class="icon-btn" title="Settings"><i class="fa-solid fa-gear"></i></button>
+            </div>
+        </header>
+
+        <main>
+            <div id="board-container">
+                <div id="zoom-controls">
+                    <button id="btn-zoom-in" title="Zoom In">+</button>
+                    <span id="zoom-level">100%</span>
+                    <button id="btn-zoom-out" title="Zoom Out">-</button>
+                    <button id="btn-zoom-reset" title="Reset Zoom">Reset</button>
+                </div>
+                <svg id="board" viewBox="-400 -350 800 700"></svg>
+            </div>
+
+            <aside id="sidebar">
+                <!-- Players Section -->
+                <section id="players-section">
+                    <h2>Players</h2>
+                    <div id="players-list">
+                        <div class="empty-state">Load a game to see players</div>
+                    </div>
+                </section>
+
+                <!-- Playback Controls -->
+                <section id="playback-section">
+                    <h2>Playback</h2>
+                    <div id="playback-controls">
+                        <button id="btn-step-back" class="playback-btn" title="Step Back" disabled>
+                            <i class="fa-solid fa-backward-step"></i>
+                        </button>
+                        <button id="btn-play-pause" class="playback-btn" title="Play/Pause" disabled>
+                            <i class="fa-solid fa-play"></i>
+                        </button>
+                        <button id="btn-step-forward" class="playback-btn" title="Step Forward" disabled>
+                            <i class="fa-solid fa-forward-step"></i>
+                        </button>
+                    </div>
+                    <div id="playback-position">
+                        <span id="current-event">0</span> / <span id="total-events">0</span>
+                    </div>
+                </section>
+
+                <!-- Event Log Section -->
+                <section id="events-section">
+                    <h2>Event Log</h2>
+                    <div id="events-list">
+                        <div class="empty-state">No events to display</div>
+                    </div>
+                </section>
+            </aside>
+        </main>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>Settings</h2>
+                <div class="form-group">
+                    <label for="api-url-input">API Base URL:</label>
+                    <input type="text" id="api-url-input" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                    <label for="api-key-input">API Key:</label>
+                    <input type="password" id="api-key-input" placeholder="x-functions-key value">
+                </div>
+                <div class="button-group">
+                    <button id="btn-save-settings">Save</button>
+                    <button id="btn-cancel-settings">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/hexmath.js"></script>
+    <script src="js/board.js"></script>
+    <script src="js/api.js"></script>
+    <script src="replay/replay.js"></script>
+</body>
+</html>
