@@ -280,6 +280,17 @@ const App = {
     resetGameStateFlags() {
         this.previousCurrentPlayerId = null;
         this.gameOverSoundPlayed = false;
+        // Clear notification tracking so we don't show historical gains
+        this.lastNotificationEventId = null;
+        this.clearActiveNotifications();
+    },
+
+    // Clear all active notifications and their timeouts
+    clearActiveNotifications() {
+        for (const data of this.activeNotifications.values()) {
+            clearTimeout(data.timeoutId);
+        }
+        this.activeNotifications.clear();
     },
 
     async refreshGameState() {
@@ -516,6 +527,9 @@ const App = {
         document.getElementById('no-activity-modal').classList.add('hidden');
         // Reset counters and restart auto-refresh
         this.resetAutoRefreshCounters();
+        // Reset notification tracking so we don't show gains that happened while away
+        this.lastNotificationEventId = this.getLatestEventId(this.currentGame);
+        this.clearActiveNotifications();
         this.startAutoRefresh();
     },
 
