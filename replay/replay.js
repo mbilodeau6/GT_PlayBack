@@ -334,6 +334,25 @@ const Replay = {
                     this.resourceDeltas[playerId][resource] = (this.resourceDeltas[playerId][resource] || 0) + count;
                 }
             }
+
+            // For StealResource action, the target player loses what the stealing player received
+            if (event.action === 'StealResource' && event.targetPlayerId) {
+                const targetId = event.targetPlayerId;
+                // Ensure target player has resource tracking initialized
+                if (!this.playerResources[targetId]) {
+                    this.playerResources[targetId] = { Brick: 0, Wood: 0, Ore: 0, Grain: 0, Wool: 0 };
+                }
+                if (!this.resourceDeltas[targetId]) {
+                    this.resourceDeltas[targetId] = { Brick: 0, Wood: 0, Ore: 0, Grain: 0, Wool: 0 };
+                }
+
+                for (const [resource, count] of Object.entries(event.resourcesReceived)) {
+                    this.playerResources[targetId][resource] = (this.playerResources[targetId][resource] || 0) - count;
+                    if (isCurrentEvent) {
+                        this.resourceDeltas[targetId][resource] = (this.resourceDeltas[targetId][resource] || 0) - count;
+                    }
+                }
+            }
         }
 
         // Handle resources used/spent
@@ -356,18 +375,25 @@ const Replay = {
             }
         }
 
-        // Handle stolen resources (robber/knight)
+        // Handle stolen resources (robber/knight/StealResource action)
         if (event.stolenResource && event.targetPlayerId) {
             const targetId = event.targetPlayerId;
-            if (this.playerResources[targetId]) {
-                // Target loses the resource
-                this.playerResources[targetId][event.stolenResource] = (this.playerResources[targetId][event.stolenResource] || 0) - 1;
-                // Player gains the resource
-                this.playerResources[playerId][event.stolenResource] = (this.playerResources[playerId][event.stolenResource] || 0) + 1;
-                if (isCurrentEvent) {
-                    this.resourceDeltas[targetId][event.stolenResource] = (this.resourceDeltas[targetId][event.stolenResource] || 0) - 1;
-                    this.resourceDeltas[playerId][event.stolenResource] = (this.resourceDeltas[playerId][event.stolenResource] || 0) + 1;
-                }
+            // Ensure target player has resource tracking initialized
+            if (!this.playerResources[targetId]) {
+                this.playerResources[targetId] = { Brick: 0, Wood: 0, Ore: 0, Grain: 0, Wool: 0 };
+            }
+            if (!this.resourceDeltas[targetId]) {
+                this.resourceDeltas[targetId] = { Brick: 0, Wood: 0, Ore: 0, Grain: 0, Wool: 0 };
+            }
+
+            // Target loses the resource
+            this.playerResources[targetId][event.stolenResource] = (this.playerResources[targetId][event.stolenResource] || 0) - 1;
+            // Player gains the resource
+            this.playerResources[playerId][event.stolenResource] = (this.playerResources[playerId][event.stolenResource] || 0) + 1;
+
+            if (isCurrentEvent) {
+                this.resourceDeltas[targetId][event.stolenResource] = (this.resourceDeltas[targetId][event.stolenResource] || 0) - 1;
+                this.resourceDeltas[playerId][event.stolenResource] = (this.resourceDeltas[playerId][event.stolenResource] || 0) + 1;
             }
         }
     },
@@ -527,9 +553,17 @@ const Replay = {
 
         container.innerHTML = '';
 
+        // Determine current player from the current event
+        const events = this.gameData.eventRecord || [];
+        const currentEvent = this.currentEventIndex >= 0 ? events[this.currentEventIndex] : null;
+        const currentPlayerId = currentEvent?.playerId || null;
+
         this.gameData.players.forEach(player => {
             const card = document.createElement('div');
             card.className = 'player-card';
+            if (player.id === currentPlayerId) {
+                card.classList.add('current-turn');
+            }
             card.style.borderLeftColor = this.getPlayerCSSColor(player.color);
 
             // Use tracked resources (starting at zero) instead of current game state

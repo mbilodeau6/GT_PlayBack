@@ -179,6 +179,18 @@
     margin-bottom: 0.75rem;
 }
 
+/* Current turn indicator */
+#players-list .player-card.current-turn {
+    background-color: rgba(233, 69, 96, 0.15);
+    box-shadow: 0 0 8px rgba(233, 69, 96, 0.4);
+}
+
+#players-list .player-card.current-turn .player-name::after {
+    content: " \25C0";
+    color: #e94560;
+    font-size: 0.8em;
+}
+
 /* Make sidebar slightly wider for replay to fit more event text */
 #sidebar {
     width: 360px;
