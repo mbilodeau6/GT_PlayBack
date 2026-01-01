@@ -17,6 +17,10 @@ const Replay = {
     playerResources: {}, // playerId -> { Brick: n, Wood: n, ... }
     resourceDeltas: {},  // playerId -> { Brick: +/-n, Wood: +/-n, ... } for current event
 
+    // Track player development cards
+    // Each card is { type: 'Knight'|'VictoryPoint'|'RoadBuilding'|'YearOfPlenty'|'Monopoly', played: boolean }
+    playerDevCards: {}, // playerId -> array of card objects
+
     // Track last dice roll
     lastDiceRoll: null,
 
@@ -207,13 +211,15 @@ const Replay = {
         this.highlightedPiece = null;
         this.lastDiceRoll = null;
 
-        // Initialize all player resources to zero
+        // Initialize all player resources to zero and dev cards to empty
         this.playerResources = {};
         this.resourceDeltas = {};
+        this.playerDevCards = {};
         const resourceTypes = ['Brick', 'Wood', 'Ore', 'Grain', 'Wool'];
         this.gameData.players.forEach(p => {
             this.playerResources[p.id] = {};
             this.resourceDeltas[p.id] = {};
+            this.playerDevCards[p.id] = [];
             resourceTypes.forEach(r => {
                 this.playerResources[p.id][r] = 0;
                 this.resourceDeltas[p.id][r] = 0;
@@ -249,6 +255,9 @@ const Replay = {
 
         // Apply resource changes from event
         this.applyResourceChanges(event, isCurrentEvent);
+
+        // Apply development card changes from event
+        this.applyDevCardChanges(event);
 
         switch (event.action) {
             case 'PlaceFirstSettlement':
@@ -394,6 +403,51 @@ const Replay = {
             if (isCurrentEvent) {
                 this.resourceDeltas[targetId][event.stolenResource] = (this.resourceDeltas[targetId][event.stolenResource] || 0) - 1;
                 this.resourceDeltas[playerId][event.stolenResource] = (this.resourceDeltas[playerId][event.stolenResource] || 0) + 1;
+            }
+        }
+    },
+
+    applyDevCardChanges(event) {
+        const playerId = event.playerId;
+        if (!playerId || !this.playerDevCards[playerId]) {
+            // Initialize if needed
+            if (playerId && !this.playerDevCards[playerId]) {
+                this.playerDevCards[playerId] = [];
+            } else {
+                return;
+            }
+        }
+
+        // Handle buying a development card
+        if (event.action === 'BuyDevelopmentCard' && event.developmentCard) {
+            this.playerDevCards[playerId].push({
+                type: event.developmentCard,
+                played: false
+            });
+        }
+
+        // Handle playing development cards (mark first unplayed card of that type as played)
+        // Knights are marked played but kept; other cards are removed
+        const playActions = {
+            'PlayKnight': 'Knight',
+            'PlayMonopoly': 'Monopoly',
+            'PlayYearOfPlenty': 'YearOfPlenty',
+            'PlayRoadBuilding': 'RoadBuilding'
+        };
+
+        if (playActions[event.action]) {
+            const cardType = playActions[event.action];
+            const cards = this.playerDevCards[playerId];
+            const cardIndex = cards.findIndex(c => c.type === cardType && !c.played);
+
+            if (cardIndex !== -1) {
+                if (cardType === 'Knight') {
+                    // Knights stay in the list but get marked as played (shown in yellow)
+                    cards[cardIndex].played = true;
+                } else {
+                    // Other cards are removed when played
+                    cards.splice(cardIndex, 1);
+                }
             }
         }
     },
@@ -571,12 +625,16 @@ const Replay = {
             const deltas = this.resourceDeltas[player.id] || {};
             const resourcesHtml = this.renderResourceBoxes(resources, deltas);
 
+            // Get dev cards display
+            const devCardsHtml = this.renderDevCards(player.id);
+
             card.innerHTML = `
                 <div class="player-card-header">
                     <span class="player-name">${player.name}</span>
                 </div>
                 <div class="player-stats">
                     <span>VP: <span class="stat-value">${player.victoryPoints}</span></span>
+                    <span class="dev-cards-display">Dev: ${devCardsHtml || '-'}</span>
                 </div>
                 <div class="player-resources-row">
                     <div class="player-resources">${resourcesHtml}</div>
@@ -585,6 +643,29 @@ const Replay = {
 
             container.appendChild(card);
         });
+    },
+
+    renderDevCards(playerId) {
+        const cards = this.playerDevCards[playerId] || [];
+        if (cards.length === 0) return '';
+
+        // Map card types to letters
+        const cardLetters = {
+            'Knight': 'K',
+            'VictoryPoint': 'V',
+            'RoadBuilding': 'R',
+            'YearOfPlenty': 'Y',
+            'Monopoly': 'M'
+        };
+
+        return cards.map(card => {
+            const letter = cardLetters[card.type] || '?';
+            if (card.type === 'Knight' && card.played) {
+                // Played knights are shown in yellow
+                return `<span class="dev-card-letter played-knight">${letter}</span>`;
+            }
+            return `<span class="dev-card-letter">${letter}</span>`;
+        }).join('');
     },
 
     renderResourceBoxes(resources, deltas = {}) {

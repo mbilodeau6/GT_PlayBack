@@ -161,7 +161,8 @@
     background-color: #0a1628;
     border-radius: 6px;
     padding: 0.5rem;
-    max-height: 200px;
+    height: 120px;
+    min-height: 120px;
     overflow-y: auto;
 }
 
@@ -189,6 +190,22 @@
     content: " \25C0";
     color: #e94560;
     font-size: 0.8em;
+}
+
+/* Development cards display */
+.dev-cards-display {
+    margin-left: 1rem;
+    font-size: 0.85rem;
+}
+
+.dev-card-letter {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-weight: bold;
+    margin-right: 1px;
+}
+
+.dev-card-letter.played-knight {
+    color: #ffeb3b;
 }
 
 /* Make sidebar slightly wider for replay to fit more event text */
