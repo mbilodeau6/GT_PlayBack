@@ -156,6 +156,23 @@
     color: #aaa;
 }
 
+/* Undone events (from Undo actions) - shown in red with strikethrough */
+.event-item.undone {
+    color: #c44;
+    text-decoration: line-through;
+}
+
+.event-item.undone .event-id,
+.event-item.undone .event-action,
+.event-item.undone .event-player {
+    color: #c44;
+}
+
+.event-item.undone.current {
+    background-color: rgba(204, 68, 68, 0.15);
+    border-left-color: #c44;
+}
+
 /* Event Detail Section */
 #event-detail {
     background-color: #0a1628;

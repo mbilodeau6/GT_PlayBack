@@ -34,6 +34,10 @@ const Replay = {
     // Track the first "real" event index (first PlaceFirstSettlement)
     firstRealEventIndex: 0,
 
+    // Track undone events (from Undo actions)
+    undoneEventIds: new Set(),    // Event IDs that were undone
+    undoEventIndices: new Set(),  // Indices of Undo events themselves
+
     // Zoom state
     zoomLevel: 1.0,
     minZoom: 0.5,
@@ -144,6 +148,8 @@ const Replay = {
             const response = await API.getGame(gameId);
             if (response.success) {
                 this.gameData = response.gameState;
+                // Scan for undone events first
+                this.scanForUndoneEvents();
                 // Find the first real event (first PlaceFirstSettlement)
                 this.firstRealEventIndex = this.findFirstRealEventIndex();
                 // Auto-advance to the first real event
@@ -248,6 +254,12 @@ const Replay = {
         for (let i = 0; i <= upToIndex && i < events.length; i++) {
             const event = events[i];
             this.currentBuildIndex = i; // Track current index for isRoadBuildingRoad
+
+            // Skip undone events and Undo events - don't apply their state changes
+            if (this.isEventSkipped(i)) {
+                continue;
+            }
+
             this.applyEvent(state, event, i === upToIndex);
         }
 
@@ -257,6 +269,37 @@ const Replay = {
     findDesertTileId() {
         const desertTile = this.gameData.tiles.find(t => t.resource === 'Desert');
         return desertTile?.id || null;
+    },
+
+    // Scan eventRecord for Undo events and build sets of undone event IDs and Undo event indices
+    scanForUndoneEvents() {
+        this.undoneEventIds = new Set();
+        this.undoEventIndices = new Set();
+
+        const events = this.gameData?.eventRecord || [];
+        events.forEach((event, index) => {
+            if (event.action === 'Undo' && event.eventReversed !== undefined) {
+                // Mark this as an Undo event
+                this.undoEventIndices.add(index);
+                // Mark the reversed event as undone
+                this.undoneEventIds.add(event.eventReversed);
+            }
+        });
+    },
+
+    // Check if an event at a given index should be skipped (is undone or is an Undo event)
+    isEventSkipped(index) {
+        const events = this.gameData?.eventRecord || [];
+        const event = events[index];
+        if (!event) return false;
+
+        // Skip if this is an Undo event
+        if (this.undoEventIndices.has(index)) return true;
+
+        // Skip if this event was undone (check by event ID)
+        if (event.id !== undefined && this.undoneEventIds.has(event.id)) return true;
+
+        return false;
     },
 
     // Find the index of the first "real" event (first PlaceFirstSettlement)
@@ -780,6 +823,11 @@ const Replay = {
         events.forEach((event, index) => {
             const item = document.createElement('div');
             item.className = 'event-item';
+
+            // Check if this event is undone or is an Undo event
+            if (this.isEventSkipped(index)) {
+                item.classList.add('undone');
+            }
 
             if (index < this.currentEventIndex) {
                 item.classList.add('past');
