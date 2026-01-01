@@ -25,8 +25,8 @@ const Replay = {
     largestArmyPlayerId: null,
     longestRoadPlayerId: null,
 
-    // Track last dice roll
-    lastDiceRoll: null,
+    // Track last dice roll (supports both old format with total and new format with individual dice)
+    lastDiceRoll: null, // { total: n } or { die1: n, die2: n }
 
     // Track player lineup order from InitialSetUp event
     playerLineup: null, // array of player IDs in turn order
@@ -202,10 +202,20 @@ const Replay = {
 
     renderDice() {
         const diceDisplay = document.getElementById('dice-display');
-        const diceTotal = document.getElementById('dice-total');
+        const dice1 = document.getElementById('dice-1');
+        const dice2 = document.getElementById('dice-2');
 
         if (this.lastDiceRoll !== null) {
-            diceTotal.textContent = this.lastDiceRoll;
+            if (this.lastDiceRoll.die1 !== undefined && this.lastDiceRoll.die2 !== undefined) {
+                // New format: show two separate dice
+                dice1.textContent = this.lastDiceRoll.die1;
+                dice2.textContent = this.lastDiceRoll.die2;
+                dice2.classList.remove('hidden');
+            } else {
+                // Old format: show single die with total
+                dice1.textContent = this.lastDiceRoll.total;
+                dice2.classList.add('hidden');
+            }
             diceDisplay.classList.remove('hidden');
         } else {
             diceDisplay.classList.add('hidden');
@@ -406,9 +416,11 @@ const Replay = {
             }
         }
 
-        // Track dice rolls
-        if (event.diceRoll !== undefined) {
-            this.lastDiceRoll = event.diceRoll;
+        // Track dice rolls - support both old format (diceRoll total) and new format (die1, die2)
+        if (event.die1 !== undefined && event.die2 !== undefined) {
+            this.lastDiceRoll = { die1: event.die1, die2: event.die2 };
+        } else if (event.diceRoll !== undefined) {
+            this.lastDiceRoll = { total: event.diceRoll };
         }
     },
 
