@@ -205,6 +205,7 @@ const Replay = {
         const events = this.gameData.eventRecord || [];
         for (let i = 0; i <= upToIndex && i < events.length; i++) {
             const event = events[i];
+            this.currentBuildIndex = i; // Track current index for isRoadBuildingRoad
             this.applyEvent(state, event, i === upToIndex);
         }
 
@@ -286,9 +287,20 @@ const Replay = {
         }
     },
 
+    // Standard Catan building costs
+    buildingCosts: {
+        Road: { Brick: 1, Wood: 1 },
+        Settlement: { Brick: 1, Wood: 1, Grain: 1, Wool: 1 },
+        City: { Ore: 3, Grain: 2 },
+        DevCard: { Ore: 1, Grain: 1, Wool: 1 }
+    },
+
     applyResourceChanges(event, isCurrentEvent) {
         const playerId = event.playerId;
         if (!playerId || !this.playerResources[playerId]) return;
+
+        // Handle building costs (only for regular builds, not initial placement)
+        this.applyBuildingCost(event, isCurrentEvent);
 
         // Handle resources received
         if (event.resourcesReceived) {
@@ -334,6 +346,83 @@ const Replay = {
                 }
             }
         }
+    },
+
+    applyBuildingCost(event, isCurrentEvent) {
+        const playerId = event.playerId;
+        let cost = null;
+
+        switch (event.action) {
+            case 'PlaceRoad':
+                // Check if this road is free (from Road Building dev card or setup phase)
+                if (!this.isFreeRoad(event.playerId)) {
+                    cost = this.buildingCosts.Road;
+                }
+                break;
+            case 'PlaceSettlement':
+                cost = this.buildingCosts.Settlement;
+                break;
+            case 'PlaceCity':
+            case 'UpgradeSettlement':
+                cost = this.buildingCosts.City;
+                break;
+            case 'BuyDevelopmentCard':
+                cost = this.buildingCosts.DevCard;
+                break;
+            // Initial placements (PlaceFirstSettlement, PlaceSecondSettlement, PlaceFirstRoad, PlaceSecondRoad) are free
+        }
+
+        if (cost) {
+            for (const [resource, count] of Object.entries(cost)) {
+                this.playerResources[playerId][resource] = (this.playerResources[playerId][resource] || 0) - count;
+                if (isCurrentEvent) {
+                    this.resourceDeltas[playerId][resource] = (this.resourceDeltas[playerId][resource] || 0) - count;
+                }
+            }
+        }
+    },
+
+    // Check if a PlaceRoad is free (setup phase or Road Building dev card)
+    // Returns true if this road should be free, false otherwise
+    isFreeRoad(playerId) {
+        const events = this.gameData.eventRecord || [];
+        const currentIdx = this.currentBuildIndex;
+
+        // Check if we're in setup phase (road immediately after PlaceFirstSettlement or PlaceSecondSettlement)
+        // Look at the immediately preceding event
+        if (currentIdx > 0) {
+            const prevEvent = events[currentIdx - 1];
+            if ((prevEvent.action === 'PlaceFirstSettlement' || prevEvent.action === 'PlaceSecondSettlement')
+                && prevEvent.playerId === playerId) {
+                return true; // Free road during setup
+            }
+        }
+
+        // Check for Road Building dev card
+        // Search backwards to find PlayRoadBuilding, counting PlaceRoads by same player
+        let roadsAfterRoadBuilding = 0;
+        let foundRoadBuilding = false;
+
+        for (let i = currentIdx - 1; i >= 0; i--) {
+            const evt = events[i];
+
+            // If we hit an EndTurn by this player, Road Building effect is over
+            if (evt.action === 'EndTurn' && evt.playerId === playerId) {
+                break;
+            }
+
+            if (evt.action === 'PlayRoadBuilding' && evt.playerId === playerId) {
+                foundRoadBuilding = true;
+                break;
+            }
+
+            if (evt.action === 'PlaceRoad' && evt.playerId === playerId) {
+                roadsAfterRoadBuilding++;
+            }
+        }
+
+        // Current road is free if Road Building was played and fewer than 2 roads have been placed since
+        return foundRoadBuilding && roadsAfterRoadBuilding < 2;
     },
 
     blockAdjacentVertices(state, vertexId) {
