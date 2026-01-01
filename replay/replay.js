@@ -17,6 +17,9 @@ const Replay = {
     playerResources: {}, // playerId -> { Brick: n, Wood: n, ... }
     resourceDeltas: {},  // playerId -> { Brick: +/-n, Wood: +/-n, ... } for current event
 
+    // Track last dice roll
+    lastDiceRoll: null,
+
     // Zoom state
     zoomLevel: 1.0,
     minZoom: 0.5,
@@ -168,6 +171,21 @@ const Replay = {
 
         // Apply highlighting to the piece from the current event
         this.applyHighlight();
+
+        // Update dice display
+        this.renderDice();
+    },
+
+    renderDice() {
+        const diceDisplay = document.getElementById('dice-display');
+        const diceTotal = document.getElementById('dice-total');
+
+        if (this.lastDiceRoll !== null) {
+            diceTotal.textContent = this.lastDiceRoll;
+            diceDisplay.classList.remove('hidden');
+        } else {
+            diceDisplay.classList.add('hidden');
+        }
     },
 
     // Build board state by replaying events up to the given index
@@ -185,8 +203,9 @@ const Replay = {
             robberTileId: this.findDesertTileId() // Robber starts on desert
         };
 
-        // Clear the highlight
+        // Clear the highlight and dice roll
         this.highlightedPiece = null;
+        this.lastDiceRoll = null;
 
         // Initialize all player resources to zero
         this.playerResources = {};
@@ -284,6 +303,11 @@ const Replay = {
                 }
                 break;
             }
+        }
+
+        // Track dice rolls
+        if (event.diceRoll !== undefined) {
+            this.lastDiceRoll = event.diceRoll;
         }
     },
 
