@@ -2627,8 +2627,14 @@ const App = {
         container.scrollTop = container.scrollHeight;
     },
 
-    // Log a message to the history log
+    // Log a message to the history log (errors go to debug log instead)
     log(message, type = '') {
+        // Redirect errors to debug log
+        if (type === 'error') {
+            this.debugLog(message, 'error');
+            return;
+        }
+
         const container = document.getElementById('history-log');
         const entry = document.createElement('div');
         entry.className = `log-entry ${type}`;
@@ -2644,6 +2650,35 @@ const App = {
         container.scrollTop = container.scrollHeight;
 
         console.log(`[${type || 'info'}] ${message}`);
+    },
+
+    // Log a message to the debug log (persists across refreshes, cleared on game load)
+    debugLog(message, type = '') {
+        const container = document.getElementById('debug-log');
+        if (!container) return;
+
+        const entry = document.createElement('div');
+        entry.className = `debug-entry ${type}`;
+        entry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+        container.appendChild(entry);
+
+        // Keep only last 100 entries
+        while (container.children.length > 100) {
+            container.removeChild(container.firstChild);
+        }
+
+        // Scroll to bottom to show newest message
+        container.scrollTop = container.scrollHeight;
+
+        console.log(`[debug-${type || 'info'}] ${message}`);
+    },
+
+    // Clear the debug log
+    clearDebugLog() {
+        const container = document.getElementById('debug-log');
+        if (container) {
+            container.innerHTML = '';
+        }
     }
 };
 

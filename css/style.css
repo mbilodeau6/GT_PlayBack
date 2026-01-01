@@ -646,6 +646,39 @@ select:focus {
     color: #2ecc71;
 }
 
+/* Debug Log */
+#debug-log {
+    min-height: 40px;
+    max-height: 300px;
+    height: 50px;
+    overflow-y: auto;
+    font-size: 0.75rem;
+    font-family: 'Consolas', 'Monaco', monospace;
+    color: #8bc34a;
+    background-color: #0a1628;
+    padding: 0.5rem;
+    border-radius: 6px;
+    resize: vertical;
+}
+
+.debug-entry {
+    padding: 0.15rem 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.debug-entry.warn {
+    color: #ffc107;
+}
+
+.debug-entry.error {
+    color: #e94560;
+}
+
+.debug-entry.info {
+    color: #2196f3;
+}
+
 /* Modal */
 .modal {
     position: fixed;
