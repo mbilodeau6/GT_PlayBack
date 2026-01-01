@@ -1,5 +1,7 @@
 GT_PLAYBACK is a static web app that will be hosted as an Azure Static Web app. It is the front-end for a Settlers of Catan type game. Please check with the user if you are going to use any technology or techniques that might make this difficult or require paid Azure services.
 
+In addition to the Game which is available through index.html, there is a separate replay.html page which can be used by the development and support staff to review what happened in a finished game. It can also be used to look for problems or opportunities for improvement in the game's back-end (i.e. it isn't used to test the game UI). Although it is okay for replay to use game components, it is critical that nothing is done in support of replay that harms that usability and performance of game pley in the main UI.
+
 Whenever the game needs to present resources to the user, the resources should be displayed as colored blocks. The color should match the colors used on the main board and the box should have a tooltip that indicates the resource name (Wood, Brick, Wool, Grain, Ore). Display of elements and concepts should be consistent in all of the components that make up the game.
 
 The back-end is also hosted in Azure as an Azure Function App (i.e. a serverless app). Below are samples of the API calls the back-end supports:
@@ -12,7 +14,7 @@ GET_GAME: curl --request GET https://gametest-heb2a9a4b9ecgmht.canadacentral-01.
 
 START_GAME: curl -X POST "https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net/api/Games/<GAME_ID>/start" -H "x-functions-key: <SECRET>"
 
-UNDO: curl -X POST ""https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net/api/Games/<GAME_ID>/undo" -H "Content-Type: application/json" -d "{\"playerId\":\"P1\",\"eventId\":1}" -H "x-functions-key: <SECRET>"
+UNDO: curl -X POST ""https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net/api/Games/<GAME_ID>/undo" -H "Content-Type: application/json" -d "{\"playerId\":\"P1\",\"eventId\":1}" -H "x-functions-key: <SECRET>=="
 
 SETTLEMENT: curl -X POST "https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net/api/Games/<GAME_ID>/build/settlement" -H "Content-Type: application/json" -d "{\"playerId\":\"P1\",\"vertexId\":\"V43\"}" -H "x-functions-key: <SECRET>"
 
