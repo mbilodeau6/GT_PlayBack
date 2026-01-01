@@ -288,6 +288,8 @@ const App = {
         this.clearActiveNotifications();
         // Reset action signature to force button rebuild on new game
         this.lastActionSignature = null;
+        // Clear debug log for fresh start
+        this.clearDebugLog();
     },
 
     // Clear all active notifications and their timeouts
