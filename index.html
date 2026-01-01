@@ -296,7 +296,6 @@
                         <input type="text" id="menu-player-name-input" placeholder="Player name...">
                         <div class="button-group">
                             <select id="menu-player-color-select">
-                                <option value="">Any Color</option>
                                 <option value="Red">Red</option>
                                 <option value="Blue">Blue</option>
                                 <option value="Orange">Orange</option>
@@ -322,6 +321,17 @@
 
                 <div class="button-group">
                     <button id="btn-close-game-menu">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Modal -->
+        <div id="error-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>Error</h2>
+                <p id="error-message"></p>
+                <div class="button-group">
+                    <button id="btn-close-error">Close</button>
                 </div>
             </div>
         </div>

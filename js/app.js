@@ -111,6 +111,7 @@ const App = {
         document.getElementById('btn-close-game-over').addEventListener('click', () => this.closeModal('game-over-modal'));
         document.getElementById('btn-close-trade-rejected').addEventListener('click', () => this.closeTradeRejectedModal());
         document.getElementById('btn-continue-activity').addEventListener('click', () => this.closeNoActivityModal());
+        document.getElementById('btn-close-error').addEventListener('click', () => this.closeModal('error-modal'));
     },
 
     // ==================== ZOOM ====================
@@ -256,14 +257,14 @@ const App = {
             this.populateMenuPlayerDropdown();
             this.updateGameMenuUI();
         } else {
-            this.log(`Error: ${response.errorMessage}`, 'error');
+            this.showError(response.errorMessage);
         }
     },
 
     async loadGameById() {
         const gameId = document.getElementById('menu-game-id-input').value.trim();
         if (!gameId) {
-            this.log('Please enter a game ID', 'error');
+            this.showError('Please enter a game ID');
             return;
         }
 
@@ -275,7 +276,7 @@ const App = {
             this.populateMenuPlayerDropdown();
             this.updateGameMenuUI();
         } else {
-            this.log(`Error: ${response.errorMessage}`, 'error');
+            this.showError(response.errorMessage);
         }
     },
 
@@ -882,7 +883,7 @@ const App = {
 
     async addPlayer() {
         if (!this.currentGameId) {
-            this.log('No game loaded', 'error');
+            this.showError('No game loaded');
             return;
         }
 
@@ -891,7 +892,7 @@ const App = {
         const isBot = document.getElementById('menu-player-is-bot').checked;
 
         if (!name) {
-            this.log('Please enter a player name', 'error');
+            this.showError('Please enter a player name');
             return;
         }
 
@@ -903,7 +904,7 @@ const App = {
             this.populateMenuPlayerDropdown();
             this.updateGameMenuUI();
         } else {
-            this.log(`Error: ${response.errorMessage}`, 'error');
+            this.showError(response.errorMessage);
         }
     },
 
@@ -917,7 +918,7 @@ const App = {
             this.populateMenuPlayerDropdown();
             this.updateGameMenuUI();
         } else {
-            this.log(`Error: ${response.errorMessage}`, 'error');
+            this.showError(response.errorMessage);
         }
     },
 
@@ -930,7 +931,7 @@ const App = {
             this.handleGameResponse(response);
             this.closeModal('game-menu-modal');
         } else {
-            this.log(`Error: ${response.errorMessage}`, 'error');
+            this.showError(response.errorMessage);
         }
     },
 
@@ -2681,6 +2682,14 @@ const App = {
         if (container) {
             container.innerHTML = '';
         }
+    },
+
+    // Show error in a modal dialog (for errors that occur when another modal is open)
+    showError(message) {
+        document.getElementById('error-message').textContent = message;
+        document.getElementById('error-modal').classList.remove('hidden');
+        // Also log to debug log for record keeping
+        this.debugLog(message, 'error');
     }
 };
 

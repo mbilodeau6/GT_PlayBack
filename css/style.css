@@ -693,6 +693,15 @@ select:focus {
     z-index: 1000;
 }
 
+/* Error modal appears on top of other modals */
+#error-modal {
+    z-index: 1100;
+}
+
+#error-modal #error-message {
+    margin-bottom: 1rem;
+}
+
 .modal-content {
     background-color: #16213e;
     padding: 1.5rem;
