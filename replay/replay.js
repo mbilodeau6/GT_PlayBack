@@ -21,8 +21,18 @@ const Replay = {
     // Each card is { type: 'Knight'|'VictoryPoint'|'RoadBuilding'|'YearOfPlenty'|'Monopoly', played: boolean }
     playerDevCards: {}, // playerId -> array of card objects
 
+    // Track special achievements
+    largestArmyPlayerId: null,
+    longestRoadPlayerId: null,
+
     // Track last dice roll
     lastDiceRoll: null,
+
+    // Track player lineup order from InitialSetUp event
+    playerLineup: null, // array of player IDs in turn order
+
+    // Track the first "real" event index (first PlaceFirstSettlement)
+    firstRealEventIndex: 0,
 
     // Zoom state
     zoomLevel: 1.0,
@@ -134,7 +144,10 @@ const Replay = {
             const response = await API.getGame(gameId);
             if (response.success) {
                 this.gameData = response.gameState;
-                this.currentEventIndex = -1;
+                // Find the first real event (first PlaceFirstSettlement)
+                this.firstRealEventIndex = this.findFirstRealEventIndex();
+                // Auto-advance to the first real event
+                this.currentEventIndex = this.firstRealEventIndex;
                 this.renderInitialState();
                 this.enablePlaybackControls();
             } else {
@@ -159,9 +172,10 @@ const Replay = {
         const hasEvents = this.gameData?.eventRecord?.length > 0;
         document.getElementById('btn-step-forward').disabled = !hasEvents;
         document.getElementById('btn-play-pause').disabled = !hasEvents;
-        // Step back and restart disabled at start (before any events)
-        document.getElementById('btn-step-back').disabled = true;
-        document.getElementById('btn-restart').disabled = true;
+        // Step back and restart disabled at start (at first real event)
+        const atStart = this.currentEventIndex <= this.firstRealEventIndex;
+        document.getElementById('btn-step-back').disabled = atStart;
+        document.getElementById('btn-restart').disabled = atStart;
     },
 
     // ==================== RENDERING ====================
@@ -204,12 +218,15 @@ const Replay = {
                 building: v.building === 'Blocked' ? 'Blocked' : undefined,
                 playerId: undefined
             })),
-            robberTileId: this.findDesertTileId() // Robber starts on desert
+            robberTileId: null // Robber position comes from PlaceRobber event
         };
 
-        // Clear the highlight and dice roll
+        // Clear the highlight, dice roll, achievements, and player lineup
         this.highlightedPiece = null;
         this.lastDiceRoll = null;
+        this.largestArmyPlayerId = null;
+        this.longestRoadPlayerId = null;
+        this.playerLineup = null;
 
         // Initialize all player resources to zero and dev cards to empty
         this.playerResources = {};
@@ -240,6 +257,19 @@ const Replay = {
     findDesertTileId() {
         const desertTile = this.gameData.tiles.find(t => t.resource === 'Desert');
         return desertTile?.id || null;
+    },
+
+    // Find the index of the first "real" event (first PlaceFirstSettlement)
+    // Setup events like PlaceRobber and InitialSetUp happen before this
+    findFirstRealEventIndex() {
+        const events = this.gameData?.eventRecord || [];
+        for (let i = 0; i < events.length; i++) {
+            if (events[i].action === 'PlaceFirstSettlement') {
+                return i;
+            }
+        }
+        // If no PlaceFirstSettlement found, start at 0
+        return 0;
     },
 
     applyEvent(state, event, isCurrentEvent) {
@@ -302,13 +332,32 @@ const Replay = {
             }
 
             case 'MoveRobber':
-            case 'PlaceRobber':
             case 'PlayKnight': {
                 if (event.tileId) {
                     state.robberTileId = event.tileId;
                     if (isCurrentEvent) {
                         this.highlightedPiece = { type: 'robber', id: event.tileId };
                     }
+                }
+                break;
+            }
+
+            case 'PlaceRobber': {
+                if (event.tileId) {
+                    state.robberTileId = event.tileId;
+                    // Only highlight if this is after the first real event (gameplay has started)
+                    // Initial PlaceRobber happens before PlaceFirstSettlement, so no highlight
+                    if (isCurrentEvent && this.currentBuildIndex >= this.firstRealEventIndex) {
+                        this.highlightedPiece = { type: 'robber', id: event.tileId };
+                    }
+                }
+                break;
+            }
+
+            case 'InitialSetUp': {
+                // Store the player lineup order
+                if (event.playerLineup) {
+                    this.playerLineup = event.playerLineup;
                 }
                 break;
             }
@@ -449,6 +498,14 @@ const Replay = {
                     cards.splice(cardIndex, 1);
                 }
             }
+        }
+
+        // Handle achievement events
+        if (event.action === 'GainedLargestArmy') {
+            this.largestArmyPlayerId = playerId;
+        }
+        if (event.action === 'GainedLongestRoad') {
+            this.longestRoadPlayerId = playerId;
         }
     },
 
@@ -612,7 +669,15 @@ const Replay = {
         const currentEvent = this.currentEventIndex >= 0 ? events[this.currentEventIndex] : null;
         const currentPlayerId = currentEvent?.playerId || null;
 
-        this.gameData.players.forEach(player => {
+        // Order players by playerLineup if available, otherwise use default order
+        let orderedPlayers = this.gameData.players;
+        if (this.playerLineup && this.playerLineup.length > 0) {
+            orderedPlayers = this.playerLineup
+                .map(id => this.gameData.players.find(p => p.id === id))
+                .filter(p => p); // Filter out any undefined
+        }
+
+        orderedPlayers.forEach(player => {
             const card = document.createElement('div');
             card.className = 'player-card';
             if (player.id === currentPlayerId) {
@@ -628,9 +693,20 @@ const Replay = {
             // Get dev cards display
             const devCardsHtml = this.renderDevCards(player.id);
 
+            // Build achievement badges (same style as Presidio game)
+            const badges = [];
+            if (this.longestRoadPlayerId === player.id) {
+                badges.push('<span class="player-badge road-badge" title="Longest Road"><i class="fa-solid fa-road"></i></span>');
+            }
+            if (this.largestArmyPlayerId === player.id) {
+                badges.push('<span class="player-badge army-badge" title="Largest Army"><i class="fa-solid fa-shield-halved"></i></span>');
+            }
+            const badgesHtml = badges.length > 0 ? `<span class="player-badges">${badges.join('')}</span>` : '';
+
+            // Current turn indicator (arrow) shown via CSS ::after on player-name when current-turn class is set
             card.innerHTML = `
                 <div class="player-card-header">
-                    <span class="player-name">${player.name}</span>
+                    <span class="player-name">${player.name}</span>${badgesHtml}
                 </div>
                 <div class="player-stats">
                     <span>VP: <span class="stat-value">${player.victoryPoints}</span></span>
@@ -712,7 +788,7 @@ const Replay = {
             }
 
             const playerName = this.getPlayerName(event.playerId);
-            const eventId = event.id || index + 1;
+            const eventId = event.id ?? index;
             item.innerHTML = `<span class="event-id">${eventId}</span><span class="event-action">${event.action}</span><span class="event-player">${playerName}</span>`;
 
             item.addEventListener('click', () => this.jumpToEvent(index));
@@ -792,14 +868,18 @@ const Replay = {
 
     updatePlaybackPosition() {
         const events = this.gameData?.eventRecord || [];
-        document.getElementById('current-event').textContent = this.currentEventIndex + 1;
+        // Use the actual event ID from the event record, not the index
+        const currentEvent = this.currentEventIndex >= 0 ? events[this.currentEventIndex] : null;
+        const eventId = currentEvent?.id ?? this.currentEventIndex;
+        document.getElementById('current-event').textContent = eventId;
         document.getElementById('total-events').textContent = events.length;
     },
 
     // ==================== PLAYBACK CONTROLS ====================
 
     restart() {
-        this.currentEventIndex = -1;
+        // Go back to first real event (skipping setup events like PlaceRobber and InitialSetUp)
+        this.currentEventIndex = this.firstRealEventIndex;
         this.applyCurrentState();
     },
 
@@ -812,7 +892,8 @@ const Replay = {
     },
 
     stepBack() {
-        if (this.currentEventIndex >= 0) {
+        // Don't step back before the first real event
+        if (this.currentEventIndex > this.firstRealEventIndex) {
             this.currentEventIndex--;
             this.applyCurrentState();
         }
@@ -840,7 +921,8 @@ const Replay = {
 
     updatePlaybackButtons() {
         const events = this.gameData?.eventRecord || [];
-        const atStart = this.currentEventIndex < 0;
+        // At start means we're at or before the first real event
+        const atStart = this.currentEventIndex <= this.firstRealEventIndex;
         const atEnd = this.currentEventIndex >= events.length - 1;
 
         document.getElementById('btn-restart').disabled = atStart;

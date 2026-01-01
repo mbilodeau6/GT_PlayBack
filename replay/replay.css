@@ -208,6 +208,13 @@
     color: #ffeb3b;
 }
 
+/* Keep achievement badges together */
+.player-badges {
+    display: inline-flex;
+    gap: 0.25rem;
+    margin-left: 0.5rem;
+}
+
 /* Make sidebar slightly wider for replay to fit more event text */
 #sidebar {
     width: 360px;
