@@ -302,8 +302,9 @@ const API = {
                         errorMessage: 'Forbidden - access denied'
                     };
                 }
-                if (response.status === 404) {
-                    // 404 for the "Test" game ID is expected - this means the API is working
+                if (response.status === 404 || response.status === 400) {
+                    // 404 or 400 for the "Test" game ID is expected - this means the API is working
+                    // (400 occurs because "Test" isn't a valid GUID format)
                     return { success: true };
                 }
                 return {
