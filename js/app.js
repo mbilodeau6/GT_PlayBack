@@ -112,6 +112,134 @@ const App = {
         document.getElementById('btn-close-trade-rejected').addEventListener('click', () => this.closeTradeRejectedModal());
         document.getElementById('btn-continue-activity').addEventListener('click', () => this.closeNoActivityModal());
         document.getElementById('btn-close-error').addEventListener('click', () => this.closeModal('error-modal'));
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => this.handleKeyboardShortcut(e));
+    },
+
+    // ==================== KEYBOARD SHORTCUTS ====================
+
+    handleKeyboardShortcut(e) {
+        // Ignore if any modal is open
+        if (this.isAnyModalOpen()) return;
+
+        // Ignore if focus is on an input element
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+
+        // Ignore if modifier keys are pressed (except shift for uppercase)
+        if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+        const key = e.key.toLowerCase();
+
+        switch (key) {
+            case 'r':
+                if (this.isActionAvailable('RollDice')) {
+                    e.preventDefault();
+                    this.doRollDice(this.currentGame.phase.currentPlayerId);
+                }
+                break;
+
+            case 'e':
+                if (this.isActionAvailable('EndTurn')) {
+                    e.preventDefault();
+                    this.doEndTurn(this.currentGame.phase.currentPlayerId);
+                }
+                break;
+
+            case 'd':
+                if (this.isActionAvailable('BuyDevelopmentCard')) {
+                    e.preventDefault();
+                    this.doBuyDevCard(this.currentGame.phase.currentPlayerId);
+                }
+                break;
+
+            case 't':
+                if (this.isActionAvailable('TradeWithBank')) {
+                    e.preventDefault();
+                    const tradeAction = this.possibleActions.find(a => a.action === 'TradeWithBank');
+                    this.showTradeModal(tradeAction);
+                }
+                break;
+
+            case 'p':
+                if (this.isActionAvailable('TradeWithPlayers')) {
+                    e.preventDefault();
+                    this.showPlayerTradeModal();
+                }
+                break;
+
+            case 'u':
+                if (this.isActionAvailable('Undo')) {
+                    e.preventDefault();
+                    const undoAction = this.possibleActions.find(a => a.action === 'Undo');
+                    this.doUndo(undoAction?.eventId);
+                }
+                break;
+
+            case 'k':
+                if (this.isActionAvailable('PlayKnight')) {
+                    e.preventDefault();
+                    const knightAction = this.possibleActions.find(a => a.action === 'PlayKnight');
+                    this.startSelection('tile', knightAction?.tileIds, this.currentGame.phase.currentPlayerId, 'PlayKnight');
+                }
+                break;
+
+            case 'b':
+                if (this.isActionAvailable('PlayRoadBuilding')) {
+                    e.preventDefault();
+                    this.doPlayRoadBuilding(this.currentGame.phase.currentPlayerId);
+                }
+                break;
+
+            case 'y':
+                if (this.isActionAvailable('PlayYearOfPlenty')) {
+                    e.preventDefault();
+                    this.showYearOfPlentyModal(this.currentGame.phase.currentPlayerId);
+                }
+                break;
+
+            case 'm':
+                if (this.isActionAvailable('PlayMonopoly')) {
+                    e.preventDefault();
+                    this.showMonopolyModal(this.currentGame.phase.currentPlayerId);
+                }
+                break;
+
+            case 'escape':
+                if (this.selectionMode) {
+                    e.preventDefault();
+                    this.cancelSelection();
+                }
+                break;
+        }
+    },
+
+    isAnyModalOpen() {
+        const modalIds = [
+            'settings-modal',
+            'trade-modal',
+            'discard-modal',
+            'resource-modal',
+            'player-trade-modal',
+            'respond-trade-modal',
+            'accept-trade-modal',
+            'select-target-modal',
+            'trade-rejected-modal',
+            'game-over-modal',
+            'no-activity-modal',
+            'game-menu-modal',
+            'error-modal'
+        ];
+
+        return modalIds.some(id => {
+            const modal = document.getElementById(id);
+            return modal && !modal.classList.contains('hidden');
+        });
+    },
+
+    isActionAvailable(actionName) {
+        if (!this.isMyTurn()) return false;
+        return this.possibleActions?.some(a => a.action === actionName) ?? false;
     },
 
     // ==================== ZOOM ====================
@@ -1061,39 +1189,39 @@ const App = {
             {
                 action: 'RollDice',
                 icon: 'fa-solid fa-dice',
-                title: 'Roll Dice',
+                title: 'Roll Dice (R)',
                 highlightWhenEnabled: true,
                 handler: () => this.doRollDice(this.currentGame.phase.currentPlayerId)
             },
             {
                 action: 'BuyDevelopmentCard',
                 icon: 'fa-solid fa-scroll',
-                title: 'Buy Dev Card',
+                title: 'Buy Dev Card (D)',
                 handler: () => this.doBuyDevCard(this.currentGame.phase.currentPlayerId)
             },
             {
                 action: 'TradeWithBank',
                 icon: 'fa-solid fa-building-columns',
-                title: 'Trade with Bank',
+                title: 'Trade with Bank (T)',
                 handler: () => this.showTradeModal(availableActions['TradeWithBank'])
             },
             {
                 action: 'TradeWithPlayers',
                 icon: 'fa-solid fa-handshake',
-                title: 'Trade with Players',
+                title: 'Trade with Players (P)',
                 handler: () => this.showPlayerTradeModal()
             },
             {
                 action: 'Undo',
                 icon: 'fa-solid fa-rotate-left',
-                title: 'Undo',
+                title: 'Undo (U)',
                 secondary: true,
                 handler: () => this.doUndo(availableActions['Undo']?.eventId)
             },
             {
                 action: 'EndTurn',
                 icon: 'fa-solid fa-forward-step',
-                title: 'End Turn',
+                title: 'End Turn (E)',
                 secondary: true,
                 handler: () => this.doEndTurn(this.currentGame.phase.currentPlayerId)
             }
@@ -1104,25 +1232,25 @@ const App = {
             {
                 action: 'PlayKnight',
                 icon: 'fa-solid fa-chess-knight',
-                title: 'Play Knight',
+                title: 'Play Knight (K)',
                 handler: () => this.startSelection('tile', availableActions['PlayKnight']?.tileIds, this.currentGame.phase.currentPlayerId, 'PlayKnight')
             },
             {
                 action: 'PlayRoadBuilding',
                 icon: 'fa-solid fa-road',
-                title: 'Play Road Building',
+                title: 'Play Road Building (B)',
                 handler: () => this.doPlayRoadBuilding(this.currentGame.phase.currentPlayerId)
             },
             {
                 action: 'PlayYearOfPlenty',
                 icon: 'fa-solid fa-gift',
-                title: 'Play Year of Plenty',
+                title: 'Play Year of Plenty (Y)',
                 handler: () => this.showYearOfPlentyModal(this.currentGame.phase.currentPlayerId)
             },
             {
                 action: 'PlayMonopoly',
                 icon: 'fa-solid fa-hand-holding-dollar',
-                title: 'Play Monopoly',
+                title: 'Play Monopoly (M)',
                 handler: () => this.showMonopolyModal(this.currentGame.phase.currentPlayerId)
             }
         ];
