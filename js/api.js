@@ -266,6 +266,62 @@ const API = {
             playerId,
             eventId
         });
+    },
+
+    // ==================== TEST CONNECTION ====================
+
+    // Tests the API connection with a known-invalid game ID
+    // Returns { success: true } if we get a valid API response (even an error)
+    // Returns { success: false, errorMessage: ... } for HTTP errors (401, 403, network errors)
+    async testConnection(baseUrl, apiKey) {
+        const url = `${baseUrl.replace(/\/$/, '')}/api/Games/Test`;
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+
+        if (apiKey) {
+            headers['x-functions-key'] = apiKey;
+        }
+
+        try {
+            const response = await fetch(url, { method: 'GET', headers });
+
+            // Check for HTTP errors
+            if (!response.ok) {
+                if (response.status === 401) {
+                    return {
+                        success: false,
+                        errorCode: 401,
+                        errorMessage: 'Unauthorized - please check your API key'
+                    };
+                }
+                if (response.status === 403) {
+                    return {
+                        success: false,
+                        errorCode: 403,
+                        errorMessage: 'Forbidden - access denied'
+                    };
+                }
+                if (response.status === 404) {
+                    // 404 for the "Test" game ID is expected - this means the API is working
+                    return { success: true };
+                }
+                return {
+                    success: false,
+                    errorCode: response.status,
+                    errorMessage: `HTTP ${response.status}: ${response.statusText}`
+                };
+            }
+
+            // If we get a valid response (even an application error), the connection works
+            return { success: true };
+        } catch (error) {
+            return {
+                success: false,
+                errorCode: -1,
+                errorMessage: 'Connection failed - please check the API URL'
+            };
+        }
     }
 };
 

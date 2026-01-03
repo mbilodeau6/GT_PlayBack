@@ -145,11 +145,18 @@ const App = {
         document.getElementById('settings-modal').classList.remove('hidden');
     },
 
-    saveSettings() {
+    async saveSettings() {
         const url = document.getElementById('api-url-input').value.trim();
         const key = document.getElementById('api-key-input').value.trim();
-        API.configure(url, key);
 
+        // Test the connection before saving
+        const testResult = await API.testConnection(url, key);
+        if (!testResult.success) {
+            this.showError(testResult.errorMessage);
+            return;
+        }
+
+        API.configure(url, key);
         this.closeSettings();
     },
 
