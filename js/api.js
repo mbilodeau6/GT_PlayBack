@@ -46,6 +46,43 @@ const API = {
         try {
             console.log(`API ${method} ${endpoint}`, body || '');
             const response = await fetch(url, options);
+
+            // Check for HTTP errors before parsing JSON
+            if (!response.ok) {
+                if (response.status === 401) {
+                    return {
+                        success: false,
+                        errorCode: 401,
+                        errorMessage: 'Unauthorized - please check your API key in Settings'
+                    };
+                }
+                if (response.status === 403) {
+                    return {
+                        success: false,
+                        errorCode: 403,
+                        errorMessage: 'Forbidden - access denied'
+                    };
+                }
+                if (response.status === 404) {
+                    return {
+                        success: false,
+                        errorCode: 404,
+                        errorMessage: 'Not found - the requested resource does not exist'
+                    };
+                }
+                // For other HTTP errors, try to get error details from response body
+                try {
+                    const errorData = await response.json();
+                    return errorData;
+                } catch {
+                    return {
+                        success: false,
+                        errorCode: response.status,
+                        errorMessage: `HTTP ${response.status}: ${response.statusText}`
+                    };
+                }
+            }
+
             const data = await response.json();
             console.log('API Response:', data);
             return data;
