@@ -10,7 +10,9 @@ CREATE_GAME: curl -X POST "https://gametest-heb2a9a4b9ecgmht.canadacentral-01.az
 
 ADD_PLAYER: curl -X POST "https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net/api/Games/<GAME_ID>/players" -H "Content-Type: application/json" -d "{\"playerName\":\"NewGuy\",\"isBot\":true,\"preferredColor\":\"orange\"}" -H "x-functions-key: <SECRET>"
 
-GET_GAME: curl --request GET https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net/api/Games/<GAME_ID> -H "x-functions-key: <SECRET>"
+OLD_GET_GAME: curl --request GET https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net/api/Games/<GAME_ID> -H "x-functions-key: <SECRET>"
+
+GET_GAME: curl -X POST "https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net/api/Games/<GAME_ID>" -H "Content-Type: application/json" -d "{\"playerId\":\"P2\"}" -H "x-functions-key: <SECRET>"
 
 START_GAME: curl -X POST "https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net/api/Games/<GAME_ID>/start" -H "x-functions-key: <SECRET>"
 

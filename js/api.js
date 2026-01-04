@@ -102,7 +102,12 @@ const API = {
         return this.request('POST', '/api/Games', { gameType });
     },
 
-    async getGame(gameId) {
+    async getGame(gameId, playerId = null) {
+        // Use POST with playerId in body (encrypted with TLS) when playing as a player
+        // Use GET without body for replay/viewer mode
+        if (playerId) {
+            return this.request('POST', `/api/Games/${gameId}`, { playerId });
+        }
         return this.request('GET', `/api/Games/${gameId}`);
     },
 

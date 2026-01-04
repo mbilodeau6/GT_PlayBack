@@ -238,7 +238,8 @@ const App = {
     },
 
     isActionAvailable(actionName) {
-        if (!this.isMyTurn()) return false;
+        // Undo is allowed even when it's not your turn (if server says it's available)
+        if (actionName !== 'Undo' && !this.isMyTurn()) return false;
         return this.possibleActions?.some(a => a.action === actionName) ?? false;
     },
 
@@ -403,7 +404,7 @@ const App = {
             return;
         }
 
-        const response = await API.getGame(gameId);
+        const response = await API.getGame(gameId, this.playingAsPlayerId);
         if (response.success) {
             this.resetGameStateFlags(response.gameState);
             this.handleGameResponse(response);
@@ -445,7 +446,7 @@ const App = {
         // User-initiated refresh resets auto-refresh counters
         this.onUserActivity();
 
-        const response = await API.getGame(this.currentGameId);
+        const response = await API.getGame(this.currentGameId, this.playingAsPlayerId);
         if (response.success) {
             this.handleGameResponse(response);
         } else {
@@ -613,7 +614,7 @@ const App = {
         }
 
         try {
-            const response = await API.getGame(this.currentGameId);
+            const response = await API.getGame(this.currentGameId, this.playingAsPlayerId);
             if (response.success) {
                 // Check for new activity by comparing event record
                 const newEventId = this.getLatestEventId(response.gameState);
@@ -1278,7 +1279,10 @@ const App = {
 
         // Render Row 1 buttons
         row1Buttons.forEach(config => {
-            const isEnabled = isMyTurn && !!availableActions[config.action];
+            // Undo is allowed even when it's not your turn (if server says it's available)
+            const isEnabled = config.action === 'Undo'
+                ? !!availableActions[config.action]
+                : isMyTurn && !!availableActions[config.action];
             const btn = createIconButton(config, isEnabled);
             row1.appendChild(btn);
         });
