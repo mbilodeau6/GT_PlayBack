@@ -2549,13 +2549,10 @@ const App = {
     // ==================== UTILITIES ====================
 
     getPlayerCSSColor(colorName) {
-        const colors = {
-            'Red': '#e74c3c',
-            'Blue': '#3498db',
-            'Orange': '#e67e22',
-            'White': '#ecf0f1'
-        };
-        return colors[colorName] || '#888';
+        // Read color from CSS custom property (defined in :root in style.css)
+        const varName = `--player-${colorName?.toLowerCase()}`;
+        const color = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+        return color || '#888';
     },
 
     renderDevCardsDisplay(player) {

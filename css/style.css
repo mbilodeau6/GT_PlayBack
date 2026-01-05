@@ -1,3 +1,17 @@
+/* ==================== Player Colors ==================== */
+/* All player colors are defined here as CSS custom properties.
+   To change a player color, update the variable below. */
+:root {
+    --player-red: #e74c3c;
+    --player-blue: #3498db;
+    --player-white: #ecf0f1;
+    --player-orange: #e67e22;
+    --player-brown: #8b4513;
+    --player-green: #27ae60;
+    --player-yellow: #f1c40f;
+    --player-purple: #9b59b6;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -951,10 +965,14 @@ select:focus {
     pointer-events: none;
 }
 
-.road.player-Red { stroke: #e74c3c; }
-.road.player-Blue { stroke: #3498db; }
-.road.player-Orange { stroke: #e67e22; }
-.road.player-White { stroke: #ecf0f1; }
+.road.player-Red { stroke: var(--player-red); }
+.road.player-Blue { stroke: var(--player-blue); }
+.road.player-White { stroke: var(--player-white); }
+.road.player-Orange { stroke: var(--player-orange); }
+.road.player-Brown { stroke: var(--player-brown); }
+.road.player-Green { stroke: var(--player-green); }
+.road.player-Yellow { stroke: var(--player-yellow); }
+.road.player-Purple { stroke: var(--player-purple); }
 
 /* Edge placeholders (for selection) */
 .edge-placeholder {
@@ -981,10 +999,14 @@ select:focus {
     stroke-width: 2;
 }
 
-.settlement.player-Red { fill: #e74c3c; }
-.settlement.player-Blue { fill: #3498db; }
-.settlement.player-Orange { fill: #e67e22; }
-.settlement.player-White { fill: #ecf0f1; }
+.settlement.player-Red { fill: var(--player-red); }
+.settlement.player-Blue { fill: var(--player-blue); }
+.settlement.player-White { fill: var(--player-white); }
+.settlement.player-Orange { fill: var(--player-orange); }
+.settlement.player-Brown { fill: var(--player-brown); }
+.settlement.player-Green { fill: var(--player-green); }
+.settlement.player-Yellow { fill: var(--player-yellow); }
+.settlement.player-Purple { fill: var(--player-purple); }
 
 /* Cities */
 .city {
@@ -993,10 +1015,14 @@ select:focus {
     pointer-events: none;
 }
 
-.city.player-Red { fill: #e74c3c; }
-.city.player-Blue { fill: #3498db; }
-.city.player-Orange { fill: #e67e22; }
-.city.player-White { fill: #ecf0f1; }
+.city.player-Red { fill: var(--player-red); }
+.city.player-Blue { fill: var(--player-blue); }
+.city.player-White { fill: var(--player-white); }
+.city.player-Orange { fill: var(--player-orange); }
+.city.player-Brown { fill: var(--player-brown); }
+.city.player-Green { fill: var(--player-green); }
+.city.player-Yellow { fill: var(--player-yellow); }
+.city.player-Purple { fill: var(--player-purple); }
 
 /* Vertex placeholders (for selection) */
 .vertex-placeholder {

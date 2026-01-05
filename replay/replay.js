@@ -916,14 +916,11 @@ const Replay = {
         return player?.name || playerId || 'Unknown';
     },
 
-    getPlayerCSSColor(color) {
-        const colors = {
-            'Red': '#e74c3c',
-            'Blue': '#3498db',
-            'Orange': '#e67e22',
-            'White': '#ecf0f1'
-        };
-        return colors[color] || '#888';
+    getPlayerCSSColor(colorName) {
+        // Read color from CSS custom property (defined in :root in style.css)
+        const varName = `--player-${colorName?.toLowerCase()}`;
+        const color = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+        return color || '#888';
     },
 
     updatePlaybackPosition() {
