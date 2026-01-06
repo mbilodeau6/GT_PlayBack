@@ -1,0 +1,16 @@
+{
+  "routes": [
+    {
+      "route": "/api/Games/*",
+      "rewrite": "/api/proxy/Games/{*}"
+    },
+    {
+      "route": "/api/Games",
+      "rewrite": "/api/proxy/Games"
+    }
+  ],
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/css/*", "/js/*", "/replay/*", "/api/*", "/*.ico", "/*.png", "/*.svg"]
+  }
+}

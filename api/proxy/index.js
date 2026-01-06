@@ -9,10 +9,11 @@ module.exports = async function (context, req) {
     const backendUrl = process.env.BACKEND_URL || 'https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net';
     const apiKey = process.env.BACKEND_API_KEY;
 
-    // Get the path after /api/proxy (or just /api for catch-all)
-    // The URL will be like /api/Games/xxx or /api/Games/xxx/action
+    // Get the path after /api/proxy
+    // After rewrite, URL will be like /api/proxy/Games/xxx
+    // We need to extract /Games/xxx to forward to backend
     const originalUrl = req.url;
-    const apiPath = originalUrl.replace(/^\/api/, '');
+    const apiPath = originalUrl.replace(/^\/api\/proxy/, '');
 
     // Build the backend URL
     const targetUrl = `${backendUrl}/api${apiPath}`;
