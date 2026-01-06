@@ -71,7 +71,6 @@ const Replay = {
 
         // Settings modal
         document.getElementById('btn-settings').addEventListener('click', () => this.openSettings());
-        document.getElementById('btn-save-settings').addEventListener('click', () => this.saveSettings());
         document.getElementById('btn-cancel-settings').addEventListener('click', () => this.closeSettings());
 
         // Error modal
@@ -104,24 +103,11 @@ const Replay = {
     // ==================== SETTINGS ====================
 
     openSettings() {
-        document.getElementById('api-url-input').value = API.baseUrl;
-        document.getElementById('api-key-input').value = API.apiKey;
         document.getElementById('settings-modal').classList.remove('hidden');
-    },
-
-    saveSettings() {
-        const url = document.getElementById('api-url-input').value.trim();
-        const key = document.getElementById('api-key-input').value.trim();
-        API.configure(url, key);
-        this.closeSettings();
     },
 
     closeSettings() {
         document.getElementById('settings-modal').classList.add('hidden');
-    },
-
-    updateSettingsUI() {
-        document.getElementById('api-url-input').value = API.baseUrl;
     },
 
     // ==================== ERROR MODAL ====================

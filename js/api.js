@@ -1,38 +1,63 @@
 /**
  * API interaction layer for the Catan backend.
+ *
+ * In production (Azure Static Web App): calls go through /api/proxy which adds the API key
+ * In local development (localhost): calls go directly to the local backend (no key needed)
  */
 
 const API = {
-    baseUrl: 'https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net',
-    apiKey: '',
+    // Default to production Azure backend
+    backendUrl: 'https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net',
 
-    configure(baseUrl, apiKey) {
-        this.baseUrl = baseUrl.replace(/\/$/, ''); // Remove trailing slash
-        this.apiKey = apiKey;
+    // Local development backend (Azure Functions running locally)
+    localBackendUrl: 'http://localhost:7071',
+
+    // Check if running locally (Live Server, etc.)
+    isLocal() {
+        const host = window.location.hostname;
+        return host === 'localhost' || host === '127.0.0.1';
+    },
+
+    // Get the appropriate base URL for API calls
+    getBaseUrl() {
+        if (this.isLocal()) {
+            // Local dev: call local backend directly
+            return this.localBackendUrl;
+        }
+        // Production: use the proxy (same origin, API key added server-side)
+        return '';
+    },
+
+    configure(backendUrl) {
+        this.backendUrl = backendUrl.replace(/\/$/, ''); // Remove trailing slash
         this.saveConfig();
     },
 
     saveConfig() {
-        localStorage.setItem('catan_api_url', this.baseUrl);
-        localStorage.setItem('catan_api_key', this.apiKey);
+        localStorage.setItem('catan_backend_url', this.backendUrl);
     },
 
     loadConfig() {
-        const savedUrl = localStorage.getItem('catan_api_url');
-        const savedKey = localStorage.getItem('catan_api_key');
-        if (savedUrl) this.baseUrl = savedUrl;
-        if (savedKey) this.apiKey = savedKey;
+        const savedUrl = localStorage.getItem('catan_backend_url');
+        if (savedUrl) this.backendUrl = savedUrl;
+
+        // Migrate old config format (remove apiKey from localStorage)
+        localStorage.removeItem('catan_api_key');
+        const oldUrl = localStorage.getItem('catan_api_url');
+        if (oldUrl) {
+            localStorage.removeItem('catan_api_url');
+            // Don't migrate the old URL - let it use the new default
+        }
     },
 
     async request(method, endpoint, body = null) {
-        const url = `${this.baseUrl}${endpoint}`;
+        const baseUrl = this.getBaseUrl();
+        const url = `${baseUrl}${endpoint}`;
         const headers = {
             'Content-Type': 'application/json'
         };
 
-        if (this.apiKey) {
-            headers['x-functions-key'] = this.apiKey;
-        }
+        // No API key header needed - handled by proxy in production, not needed locally
 
         const options = {
             method,
@@ -53,7 +78,7 @@ const API = {
                     return {
                         success: false,
                         errorCode: 401,
-                        errorMessage: 'Unauthorized - please check your API key in Settings'
+                        errorMessage: 'Unauthorized - authentication failed'
                     };
                 }
                 if (response.status === 403) {
@@ -274,18 +299,15 @@ const API = {
 
     // ==================== TEST CONNECTION ====================
 
-    // Tests the API connection with a known-invalid game ID
+    // Tests the API connection using the current routing (local or proxy)
     // Returns { success: true } if we get a valid API response (even an error)
-    // Returns { success: false, errorMessage: ... } for HTTP errors (401, 403, network errors)
-    async testConnection(baseUrl, apiKey) {
-        const url = `${baseUrl.replace(/\/$/, '')}/api/Games/Test`;
+    // Returns { success: false, errorMessage: ... } for HTTP errors or network errors
+    async testConnection() {
+        const baseUrl = this.getBaseUrl();
+        const url = `${baseUrl}/api/Games/Test`;
         const headers = {
             'Content-Type': 'application/json'
         };
-
-        if (apiKey) {
-            headers['x-functions-key'] = apiKey;
-        }
 
         try {
             const response = await fetch(url, { method: 'GET', headers });
@@ -296,7 +318,7 @@ const API = {
                     return {
                         success: false,
                         errorCode: 401,
-                        errorMessage: 'Unauthorized - please check your API key'
+                        errorMessage: 'Unauthorized - authentication failed'
                     };
                 }
                 if (response.status === 403) {
@@ -324,7 +346,7 @@ const API = {
             return {
                 success: false,
                 errorCode: -1,
-                errorMessage: 'Connection failed - please check the API URL'
+                errorMessage: 'Connection failed - backend may not be running'
             };
         }
     }
