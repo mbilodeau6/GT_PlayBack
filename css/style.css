@@ -961,10 +961,28 @@ select:focus {
 
 /* Robber */
 .robber {
-    fill: #1a1a1a;
-    stroke: #e94560;
-    stroke-width: 2;
     pointer-events: none;
+}
+
+.robber-shadow {
+    fill: rgba(0, 0, 0, 0.4);
+}
+
+.robber-body {
+    fill: #2a2a2a;
+    stroke: #f5f5dc;
+    stroke-width: 2;
+    filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.8));
+}
+
+.robber-head {
+    fill: #1a1a1a;
+    stroke: #f5f5dc;
+    stroke-width: 1.5;
+}
+
+.robber-eye {
+    fill: #ff4444;
 }
 
 /* Roads */

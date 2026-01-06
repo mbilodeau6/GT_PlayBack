@@ -184,24 +184,63 @@ const Board = {
         const pos = this.tilePositions.get(robberTileId);
         if (!pos) return;
 
-        // Robber shape (simple pawn/figure)
         // Offset to bottom-right of tile center to avoid number token
-        const robber = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         const x = pos.x + 25;
         const y = pos.y + 20;
 
-        // Simple robber shape
-        robber.setAttribute('d', `
-            M ${x} ${y - 20}
-            a 8 8 0 1 0 0.01 0
-            M ${x - 8} ${y + 15}
-            L ${x - 5} ${y - 8}
-            Q ${x} ${y - 12} ${x + 5} ${y - 8}
-            L ${x + 8} ${y + 15}
+        // Create a group for the robber
+        const robberGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        robberGroup.setAttribute('class', 'robber');
+
+        // Shadow/glow for visibility on all backgrounds
+        const shadow = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+        shadow.setAttribute('cx', x);
+        shadow.setAttribute('cy', y + 14);
+        shadow.setAttribute('rx', 10);
+        shadow.setAttribute('ry', 4);
+        shadow.setAttribute('class', 'robber-shadow');
+        robberGroup.appendChild(shadow);
+
+        // Body (hooded cloak shape)
+        const body = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        body.setAttribute('d', `
+            M ${x} ${y - 18}
+            Q ${x + 12} ${y - 14} ${x + 11} ${y + 5}
+            L ${x + 9} ${y + 12}
+            Q ${x} ${y + 10} ${x - 9} ${y + 12}
+            L ${x - 11} ${y + 5}
+            Q ${x - 12} ${y - 14} ${x} ${y - 18}
             Z
         `);
-        robber.setAttribute('class', 'robber');
-        this.layers.robber.appendChild(robber);
+        body.setAttribute('class', 'robber-body');
+        robberGroup.appendChild(body);
+
+        // Head (circle with hood effect)
+        const head = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        head.setAttribute('cx', x);
+        head.setAttribute('cy', y - 10);
+        head.setAttribute('r', 7);
+        head.setAttribute('class', 'robber-head');
+        robberGroup.appendChild(head);
+
+        // Eyes (menacing look)
+        const leftEye = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+        leftEye.setAttribute('cx', x - 3);
+        leftEye.setAttribute('cy', y - 10);
+        leftEye.setAttribute('rx', 1.5);
+        leftEye.setAttribute('ry', 1);
+        leftEye.setAttribute('class', 'robber-eye');
+        robberGroup.appendChild(leftEye);
+
+        const rightEye = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+        rightEye.setAttribute('cx', x + 3);
+        rightEye.setAttribute('cy', y - 10);
+        rightEye.setAttribute('rx', 1.5);
+        rightEye.setAttribute('ry', 1);
+        rightEye.setAttribute('class', 'robber-eye');
+        robberGroup.appendChild(rightEye);
+
+        this.layers.robber.appendChild(robberGroup);
     },
 
     // ==================== ROADS & EDGE PLACEHOLDERS ====================
