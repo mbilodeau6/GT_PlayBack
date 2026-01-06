@@ -1,16 +1,12 @@
 {
   "routes": [
     {
-      "route": "/api/health",
-      "rewrite": "/api/proxy/health"
-    },
-    {
       "route": "/api/Games/*",
-      "rewrite": "/api/proxy/Games/{*}"
+      "rewrite": "/api/proxy"
     },
     {
       "route": "/api/Games",
-      "rewrite": "/api/proxy/Games"
+      "rewrite": "/api/proxy"
     }
   ],
   "navigationFallback": {

@@ -9,18 +9,27 @@ module.exports = async function (context, req) {
     const backendUrl = process.env.BACKEND_URL || 'https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net';
     const apiKey = process.env.BACKEND_API_KEY;
 
-    // Get the path after /api/proxy
-    // After rewrite, URL will be like /api/proxy/Games/xxx
-    // We need to extract /Games/xxx to forward to backend
-    const originalUrl = req.url;
-    const apiPath = originalUrl.replace(/^\/api\/proxy/, '');
+    // Azure SWA passes the original URL in x-ms-original-url header when rewriting
+    // Fall back to req.url if header not present
+    const originalUrl = req.headers['x-ms-original-url'] || req.url;
 
-    // Health check endpoint
-    if (apiPath === '/health' || apiPath === '/Health') {
+    // Extract the API path (everything after /api)
+    // Original URL will be like https://domain/api/Games/xxx
+    let apiPath = '';
+    try {
+        const url = new URL(originalUrl, 'https://placeholder.com');
+        apiPath = url.pathname.replace(/^\/api/, '');
+    } catch {
+        // Fallback: try to extract from req.url
+        apiPath = req.url.replace(/^\/api\/proxy/, '').replace(/^\/api/, '');
+    }
+
+    // Health check endpoint - direct call to /api/proxy
+    if (!apiPath || apiPath === '/' || apiPath === '/proxy') {
         context.res = {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
-            body: { status: 'ok', version: '2025-01-06', proxy: true }
+            body: { status: 'ok', version: '2025-01-06-v2', proxy: true }
         };
         return;
     }
