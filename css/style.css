@@ -1022,8 +1022,9 @@ select:focus {
 
 /* Settlements */
 .settlement {
-    stroke: #333;
+    stroke: #222;
     stroke-width: 2;
+    cursor: pointer;
 }
 
 .settlement.player-Red { fill: var(--player-red); }
@@ -1037,7 +1038,7 @@ select:focus {
 
 /* Cities */
 .city {
-    stroke: #333;
+    stroke: #222;
     stroke-width: 2;
     pointer-events: none;
 }

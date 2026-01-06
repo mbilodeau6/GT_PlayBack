@@ -484,18 +484,17 @@ const Board = {
         const pos = this.getVertexPosition(vertex);
         if (!pos) return;
 
-        // Settlement shape (house)
-        const settlement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         const x = pos.x;
         const y = pos.y;
-        const size = 10;
 
+        // Simple house: rectangle with peaked roof (single path)
+        const settlement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         settlement.setAttribute('d', `
-            M ${x} ${y - size}
-            L ${x + size} ${y}
-            L ${x + size} ${y + size}
-            L ${x - size} ${y + size}
-            L ${x - size} ${y}
+            M ${x} ${y - 12}
+            L ${x + 9} ${y - 3}
+            L ${x + 9} ${y + 8}
+            L ${x - 9} ${y + 8}
+            L ${x - 9} ${y - 3}
             Z
         `);
         settlement.setAttribute('class', `settlement player-${playerColor}`);
@@ -503,7 +502,6 @@ const Board = {
 
         // Allow clicking on settlements for upgrade
         settlement.addEventListener('click', (e) => {
-            console.log('Settlement clicked:', vertex.id, 'onVertexClick:', !!this.onVertexClick);
             e.stopPropagation();
             if (this.onVertexClick) {
                 this.onVertexClick(vertex.id);
@@ -517,23 +515,26 @@ const Board = {
         const pos = this.getVertexPosition(vertex);
         if (!pos) return;
 
-        // City shape (larger building)
-        const city = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         const x = pos.x;
         const y = pos.y;
-        const size = 12;
 
+        // Larger two-tier stepped design - clearly bigger than settlement
+        const city = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         city.setAttribute('d', `
-            M ${x - size} ${y - size/2}
-            L ${x - size/3} ${y - size}
-            L ${x + size/3} ${y - size}
-            L ${x + size} ${y - size/2}
-            L ${x + size} ${y + size}
-            L ${x - size} ${y + size}
+            M ${x} ${y - 18}
+            L ${x + 7} ${y - 8}
+            L ${x + 7} ${y - 4}
+            L ${x + 12} ${y - 4}
+            L ${x + 12} ${y + 10}
+            L ${x - 12} ${y + 10}
+            L ${x - 12} ${y - 4}
+            L ${x - 7} ${y - 4}
+            L ${x - 7} ${y - 8}
             Z
         `);
         city.setAttribute('class', `city player-${playerColor}`);
         city.setAttribute('data-vertex-id', vertex.id);
+
         this.layers.buildings.appendChild(city);
     },
 
