@@ -1,0 +1,13 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "description": "Azure Functions API proxy for Catan backend",
+  "main": "proxy/index.js",
+  "scripts": {
+    "start": "func start"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
