@@ -16,7 +16,7 @@ GET_GAME: curl -X POST "https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azure
 
 START_GAME: curl -X POST "https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net/api/Games/<GAME_ID>/start" -H "x-functions-key: <SECRET>"
 
-UNDO: curl -X POST ""https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net/api/Games/<GAME_ID>/undo" -H "Content-Type: application/json" -d "{\"playerId\":\"P1\",\"eventId\":1}" -H "x-functions-key: <SECRET>=="
+UNDO: curl -X POST ""https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net/api/Games/<GAME_ID>/undo" -H "Content-Type: application/json" -d "{\"playerId\":\"P1\"}" -H "x-functions-key: <SECRET>=="
 
 SETTLEMENT: curl -X POST "https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net/api/Games/<GAME_ID>/build/settlement" -H "Content-Type: application/json" -d "{\"playerId\":\"P1\",\"vertexId\":\"V43\"}" -H "x-functions-key: <SECRET>"
 

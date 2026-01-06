@@ -171,8 +171,7 @@ const App = {
             case 'u':
                 if (this.isActionAvailable('Undo')) {
                     e.preventDefault();
-                    const undoAction = this.possibleActions.find(a => a.action === 'Undo');
-                    this.doUndo(undoAction?.eventId);
+                    this.doUndo();
                 }
                 break;
 
@@ -1217,7 +1216,7 @@ const App = {
                 icon: 'fa-solid fa-rotate-left',
                 title: 'Undo (U)',
                 secondary: true,
-                handler: () => this.doUndo(availableActions['Undo']?.eventId)
+                handler: () => this.doUndo()
             },
             {
                 action: 'EndTurn',
@@ -1737,9 +1736,9 @@ const App = {
         }
     },
 
-    async doUndo(eventId) {
+    async doUndo() {
         this.onUserActivity();
-        const response = await API.undo(this.currentGameId, this.playingAsPlayerId, eventId);
+        const response = await API.undo(this.currentGameId, this.playingAsPlayerId);
 
         if (response.success) {
             // Clear any pending selection so the new game state can auto-trigger the correct action

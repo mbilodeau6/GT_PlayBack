@@ -266,10 +266,9 @@ const API = {
 
     // ==================== UNDO ====================
 
-    async undo(gameId, playerId, eventId) {
+    async undo(gameId, playerId) {
         return this.request('POST', `/api/Games/${gameId}/undo`, {
-            playerId,
-            eventId
+            playerId
         });
     },
 
