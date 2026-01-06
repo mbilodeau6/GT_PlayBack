@@ -1,7 +1,8 @@
-/* ==================== Player Colors ==================== */
-/* All player colors are defined here as CSS custom properties.
-   To change a player color, update the variable below. */
+/* ==================== Color Definitions ==================== */
+/* All colors are defined here as CSS custom properties.
+   To change a color, update the variable below. */
 :root {
+    /* Player colors */
     --player-red: #e74c3c;
     --player-blue: #3498db;
     --player-white: #ecf0f1;
@@ -10,6 +11,14 @@
     --player-green: #27ae60;
     --player-yellow: #f1c40f;
     --player-purple: #9b59b6;
+
+    /* Resource/tile colors */
+    --resource-brick: #c45c26;
+    --resource-wood: #228b22;
+    --resource-ore: #708090;
+    --resource-grain: #d4a826;
+    --resource-wool: #8bc34a;
+    --resource-desert: #c4a66a;
 }
 
 * {
@@ -295,23 +304,23 @@ main {
 }
 
 .resource-box.resource-Brick {
-    background-color: #c45c3b;
+    background-color: var(--resource-brick);
 }
 
 .resource-box.resource-Wood {
-    background-color: #228b22;
+    background-color: var(--resource-wood);
 }
 
 .resource-box.resource-Ore {
-    background-color: #708090;
+    background-color: var(--resource-ore);
 }
 
 .resource-box.resource-Grain {
-    background-color: #daa520;
+    background-color: var(--resource-grain);
 }
 
 .resource-box.resource-Wool {
-    background-color: #90ee90;
+    background-color: var(--resource-wool);
 }
 
 .stat-value {
@@ -623,11 +632,11 @@ select:focus {
 }
 
 /* Resource colors */
-.resource-Brick { color: #c45c26; }
-.resource-Wood { color: #2d5a27; }
-.resource-Ore { color: #8a8a9a; }
-.resource-Grain { color: #d4a826; }
-.resource-Wool { color: #8bc34a; }
+.resource-Brick { color: var(--resource-brick); }
+.resource-Wood { color: var(--resource-wood); }
+.resource-Ore { color: var(--resource-ore); }
+.resource-Grain { color: var(--resource-grain); }
+.resource-Wool { color: var(--resource-wool); }
 
 /* History Log (event log) */
 #history-log {
@@ -869,23 +878,23 @@ select:focus {
 
 /* Resource option background colors */
 .resource-option.resource-Brick {
-    background-color: #c45c3b;
+    background-color: var(--resource-brick);
 }
 
 .resource-option.resource-Wood {
-    background-color: #228b22;
+    background-color: var(--resource-wood);
 }
 
 .resource-option.resource-Ore {
-    background-color: #708090;
+    background-color: var(--resource-ore);
 }
 
 .resource-option.resource-Grain {
-    background-color: #daa520;
+    background-color: var(--resource-grain);
 }
 
 .resource-option.resource-Wool {
-    background-color: #90ee90;
+    background-color: var(--resource-wool);
 }
 
 /* ==================== SVG Board Styles ==================== */
@@ -908,12 +917,12 @@ select:focus {
     stroke-width: 4;
 }
 
-.tile-hex.resource-Brick { fill: #c45c26; }
-.tile-hex.resource-Wood { fill: #2d5a27; }
-.tile-hex.resource-Ore { fill: #5a5a6a; }
-.tile-hex.resource-Grain { fill: #d4a826; }
-.tile-hex.resource-Wool { fill: #8bc34a; }
-.tile-hex.resource-Desert { fill: #c4a66a; }
+.tile-hex.resource-Brick { fill: var(--resource-brick); }
+.tile-hex.resource-Wood { fill: var(--resource-wood); }
+.tile-hex.resource-Ore { fill: var(--resource-ore); }
+.tile-hex.resource-Grain { fill: var(--resource-grain); }
+.tile-hex.resource-Wool { fill: var(--resource-wool); }
+.tile-hex.resource-Desert { fill: var(--resource-desert); }
 
 .tile-number {
     fill: #1a1a2e;
@@ -1091,11 +1100,11 @@ select:focus {
 }
 
 /* 2:1 Port background colors - match tile resource colors */
-.port-bg-Brick { fill: #c45c26; }
-.port-bg-Wood { fill: #2d5a27; }
-.port-bg-Ore { fill: #5a5a6a; }
-.port-bg-Grain { fill: #d4a826; }
-.port-bg-Wool { fill: #8bc34a; }
+.port-bg-Brick { fill: var(--resource-brick); }
+.port-bg-Wood { fill: var(--resource-wood); }
+.port-bg-Ore { fill: var(--resource-ore); }
+.port-bg-Grain { fill: var(--resource-grain); }
+.port-bg-Wool { fill: var(--resource-wool); }
 
 /* Player Trade Modal */
 #player-trade-header {
