@@ -15,6 +15,16 @@ module.exports = async function (context, req) {
     const originalUrl = req.url;
     const apiPath = originalUrl.replace(/^\/api\/proxy/, '');
 
+    // Health check endpoint
+    if (apiPath === '/health' || apiPath === '/Health') {
+        context.res = {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+            body: { status: 'ok', version: '2025-01-06', proxy: true }
+        };
+        return;
+    }
+
     // Build the backend URL
     const targetUrl = `${backendUrl}/api${apiPath}`;
 
