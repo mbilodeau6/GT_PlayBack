@@ -266,12 +266,27 @@ const App = {
         document.getElementById('volume-slider').value = volume;
         document.getElementById('volume-value').textContent = `${volume}%`;
 
+        // Load player token
+        const playerToken = localStorage.getItem('catan_player_token') || '';
+        document.getElementById('player-token-input').value = playerToken;
+
         document.getElementById('settings-modal').classList.remove('hidden');
     },
 
     saveSettings() {
-        // Volume is saved on change, so just close
+        // Save player token
+        const playerToken = document.getElementById('player-token-input').value.trim();
+        if (playerToken) {
+            localStorage.setItem('catan_player_token', playerToken);
+        } else {
+            localStorage.removeItem('catan_player_token');
+        }
+
         this.closeSettings();
+    },
+
+    getPlayerToken() {
+        return localStorage.getItem('catan_player_token') || null;
     },
 
     onVolumeChange(value) {
