@@ -58,6 +58,9 @@ const App = {
 
         // Load saved sound volume
         Sounds.loadVolume();
+
+        // Check for URL parameters (game invite link)
+        this.handleUrlParameters();
     },
 
     bindEventHandlers() {
@@ -463,6 +466,72 @@ const App = {
         }
     },
 
+    // ==================== URL PARAMETERS (INVITE LINKS) ====================
+
+    handleUrlParameters() {
+        const params = new URLSearchParams(window.location.search);
+        const gameId = params.get('game');
+        const playerId = params.get('player');
+
+        console.log('URL parameters:', { gameId, playerId, search: window.location.search });
+
+        // Ignore if no game parameter
+        if (!gameId) return;
+
+        // Clear URL parameters (so refresh doesn't re-trigger)
+        this.clearUrlParameters();
+
+        // Populate the game ID input immediately
+        document.getElementById('menu-game-id-input').value = gameId;
+
+        // Load the game with the specified player
+        this.loadGameFromInviteLink(gameId, playerId);
+    },
+
+    clearUrlParameters() {
+        const url = new URL(window.location.href);
+        url.search = '';
+        window.history.replaceState({}, document.title, url.pathname);
+    },
+
+    async loadGameFromInviteLink(gameId, playerId) {
+        this.log(`Loading game from invite link: ${gameId}, player: ${playerId || 'not specified'}`);
+
+        // If a player was specified, set it before loading so the API call uses it
+        if (playerId) {
+            this.playingAsPlayerId = playerId;
+            this.savePlayingAsPlayer(playerId);
+        }
+
+        // Load the game using the standard flow
+        const response = await API.getGame(gameId, this.playingAsPlayerId);
+
+        if (!response.success) {
+            this.showError(`Could not load game: ${response.errorMessage || 'Game not found'}`);
+            return;
+        }
+
+        // Validate player is in the game
+        if (playerId) {
+            const player = response.gameState?.players?.find(p => p.id === playerId);
+            if (!player) {
+                this.showError(`Player "${playerId}" is not in this game. Please select a player from the menu.`);
+                // Clear the invalid player selection
+                this.playingAsPlayerId = null;
+                this.savePlayingAsPlayer(null);
+            }
+        }
+
+        // Use the standard game loading flow
+        this.resetGameStateFlags(response.gameState);
+        this.handleGameResponse(response);
+        this.saveGameId(gameId);
+        this.populateMenuPlayerDropdown();
+        this.updateGameMenuUI();
+
+        this.log(`Game loaded from invite link`);
+    },
+
     // ==================== PLAYER SELECTION ====================
 
     onPlayingAsChanged(playerId) {
@@ -511,8 +580,16 @@ const App = {
     },
 
     populatePlayerDropdown() {
-        // Load the saved player selection
-        this.playingAsPlayerId = this.loadPlayingAsPlayer();
+        // Only load saved player if not already set (e.g., from URL parameters)
+        if (!this.playingAsPlayerId) {
+            this.playingAsPlayerId = this.loadPlayingAsPlayer();
+        } else {
+            // Validate that the current playingAsPlayerId is still valid for this game
+            const isValid = this.currentGame?.players?.some(p => p.id === this.playingAsPlayerId);
+            if (!isValid) {
+                this.playingAsPlayerId = this.loadPlayingAsPlayer();
+            }
+        }
     },
 
     getPlayerName(playerId) {
