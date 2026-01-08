@@ -1039,6 +1039,9 @@ const App = {
             Board.setSelectableElements(this.selectionMode, this.selectableIds, this.pendingAction);
         }
 
+        // Render bank resources
+        this.renderBankResources();
+
         // Render players
         this.renderPlayers();
 
@@ -1066,6 +1069,35 @@ const App = {
 
         // Update actions
         this.renderActions();
+    },
+
+    // ==================== BANK RESOURCES ====================
+
+    renderBankResources() {
+        const bankDisplay = document.getElementById('bank-display');
+        const bankResourcesContainer = document.getElementById('bank-resources');
+
+        // Check if bank data exists
+        if (!this.currentGame?.bank?.resources) {
+            bankDisplay.classList.add('hidden');
+            return;
+        }
+
+        const resources = this.currentGame.bank.resources;
+        const resourceOrder = ['Wood', 'Brick', 'Wool', 'Grain', 'Ore'];
+
+        bankResourcesContainer.innerHTML = '';
+
+        resourceOrder.forEach(resource => {
+            const count = resources[resource] ?? 0;
+            const box = document.createElement('span');
+            box.className = `resource-box resource-${resource}`;
+            box.title = `${resource}: ${count}`;
+            box.textContent = count;
+            bankResourcesContainer.appendChild(box);
+        });
+
+        bankDisplay.classList.remove('hidden');
     },
 
     // ==================== PLAYERS ====================
