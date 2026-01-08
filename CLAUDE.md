@@ -6,7 +6,7 @@ Whenever the game needs to present resources to the user, the resources should b
 
 The back-end is also hosted in Azure as an Azure Function App (i.e. a serverless app). Below are samples of the API calls the back-end supports:
 
-CREATE_GAME: curl -X POST "https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net/api/Games" -H "Content-Type: application/json" -d "{\"gameType\":\"Starter\"}" -H "x-functions-key: <SECRET>"
+CREATE_GAME: curl -X POST "https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net/api/Games" -H "Content-Type: application/json" -d "{\"gameType\":\"Starter\",\"playerToken\":<PLAYER_TOKEN>}" -H "x-functions-key: <SECRET>"
 
 ADD_PLAYER: curl -X POST "https://gametest-heb2a9a4b9ecgmht.canadacentral-01.azurewebsites.net/api/Games/<GAME_ID>/players" -H "Content-Type: application/json" -d "{\"playerName\":\"NewGuy\",\"isBot\":true,\"preferredColor\":\"orange\"}" -H "x-functions-key: <SECRET>"
 

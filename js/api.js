@@ -123,8 +123,8 @@ const API = {
 
     // ==================== GAMES ====================
 
-    async createGame(gameType = 'Starter') {
-        return this.request('POST', '/api/Games', { gameType });
+    async createGame(gameType, playerToken) {
+        return this.request('POST', '/api/Games', { gameType, playerToken });
     },
 
     async getGame(gameId, playerId = null) {

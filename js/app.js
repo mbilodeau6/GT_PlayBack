@@ -447,9 +447,15 @@ const App = {
     // ==================== GAME MANAGEMENT ====================
 
     async createNewGame() {
+        const playerToken = this.getPlayerToken();
+        if (!playerToken) {
+            this.showError('You must have a Player Token (in Settings) to create a game.');
+            return;
+        }
+
         const gameType = document.getElementById('menu-game-type-select').value;
 
-        const response = await API.createGame(gameType);
+        const response = await API.createGame(gameType, playerToken);
         if (response.success) {
             this.resetGameStateFlags(response.gameState);
             this.handleGameResponse(response);
