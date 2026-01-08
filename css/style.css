@@ -754,6 +754,47 @@ select:focus {
     margin-bottom: 0;
 }
 
+#menu-invite-links-container {
+    margin-top: 0.75rem;
+}
+
+#menu-invite-links-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.invite-link-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+}
+
+.invite-link-row .player-name {
+    flex: 1;
+    font-size: 0.9rem;
+}
+
+.invite-link-row .copy-link-btn {
+    background: none;
+    border: none;
+    color: #3498db;
+    cursor: pointer;
+    padding: 0.25rem;
+    font-size: 1rem;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.invite-link-row .copy-link-btn:hover {
+    opacity: 1;
+}
+
+.invite-link-row .copy-link-btn.copied {
+    color: #27ae60;
+}
+
 #menu-player-management {
     margin-bottom: 1rem;
 }

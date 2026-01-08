@@ -332,6 +332,8 @@ const App = {
         document.getElementById('auto-refresh-toggle').checked = this.autoRefreshEnabled;
         // Show/hide player management section based on game phase
         this.updateGameMenuUI();
+        // Populate invite links
+        this.populateInviteLinks();
         document.getElementById('game-menu-modal').classList.remove('hidden');
     },
 
@@ -345,6 +347,12 @@ const App = {
         // Show playing as dropdown whenever a game is loaded (even during setup)
         document.getElementById('menu-playing-as-container').classList.toggle('hidden', !hasGame);
 
+        // Show invite links when a game is loaded
+        document.getElementById('menu-invite-links-container').classList.toggle('hidden', !hasGame);
+        if (hasGame) {
+            this.populateInviteLinks();
+        }
+
         // Update start game button visibility
         const canStart = isSetup && this.currentGame?.players?.length >= 2;
         document.getElementById('menu-btn-start-game').classList.toggle('hidden', !canStart);
@@ -357,6 +365,63 @@ const App = {
             this.displayGame();
             this.updateUI();
         }
+    },
+
+    populateInviteLinks() {
+        const container = document.getElementById('menu-invite-links-list');
+        container.innerHTML = '';
+
+        if (!this.currentGame?.players || !this.currentGameId) return;
+
+        // Filter to non-bot players only
+        const humanPlayers = this.currentGame.players.filter(p => !p.isBot);
+
+        if (humanPlayers.length === 0) {
+            container.innerHTML = '<span style="color: #666; font-size: 0.85rem;">No human players</span>';
+            return;
+        }
+
+        humanPlayers.forEach(player => {
+            const row = document.createElement('div');
+            row.className = 'invite-link-row';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'player-name';
+            nameSpan.textContent = player.name;
+            nameSpan.style.color = this.getPlayerCSSColor(player.color);
+
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'copy-link-btn';
+            copyBtn.innerHTML = '<i class="fa-solid fa-link"></i>';
+            copyBtn.title = `Copy invite link for ${player.name}`;
+            copyBtn.addEventListener('click', () => this.copyInviteLink(player.id, player.name, copyBtn));
+
+            row.appendChild(nameSpan);
+            row.appendChild(copyBtn);
+            container.appendChild(row);
+        });
+    },
+
+    copyInviteLink(playerId, playerName, button) {
+        const baseUrl = window.location.origin;
+        const inviteUrl = `${baseUrl}/?game=${this.currentGameId}&player=${playerId}`;
+
+        navigator.clipboard.writeText(inviteUrl).then(() => {
+            // Show success feedback
+            button.classList.add('copied');
+            button.innerHTML = '<i class="fa-solid fa-check"></i>';
+
+            // Reset after 2 seconds
+            setTimeout(() => {
+                button.classList.remove('copied');
+                button.innerHTML = '<i class="fa-solid fa-link"></i>';
+            }, 2000);
+
+            this.log(`Copied invite link for ${playerName}`);
+        }).catch(err => {
+            console.error('Failed to copy:', err);
+            this.showError('Failed to copy link to clipboard');
+        });
     },
 
     populateMenuPlayerDropdown() {
@@ -472,8 +537,6 @@ const App = {
         const params = new URLSearchParams(window.location.search);
         const gameId = params.get('game');
         const playerId = params.get('player');
-
-        console.log('URL parameters:', { gameId, playerId, search: window.location.search });
 
         // Ignore if no game parameter
         if (!gameId) return;

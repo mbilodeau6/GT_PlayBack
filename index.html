@@ -256,15 +256,16 @@
             <div class="modal-content">
                 <h2>Game Menu</h2>
 
-                <!-- Playing As Section -->
-                <div class="form-group" id="menu-playing-as-container">
-                    <label for="menu-playing-as-select">Playing as:</label>
-                    <select id="menu-playing-as-select"></select>
+                <!-- Load Game Section -->
+                <div class="form-group">
+                    <label>Load Game:</label>
+                    <div class="button-group">
+                        <input type="text" id="menu-game-id-input" placeholder="Game ID...">
+                        <button id="menu-btn-load-game">Load</button>
+                    </div>
                 </div>
 
-                <hr class="modal-divider">
-
-                <!-- Game Setup Section -->
+                <!-- Create Game Section -->
                 <div class="form-group">
                     <label>New Game:</label>
                     <div class="button-group">
@@ -275,18 +276,10 @@
                         </select>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>Load Game:</label>
-                    <div class="button-group">
-                        <input type="text" id="menu-game-id-input" placeholder="Game ID...">
-                        <button id="menu-btn-load-game">Load</button>
-                    </div>
-                </div>
-
-                <hr class="modal-divider">
 
                 <!-- Player Management (during setup) -->
                 <div id="menu-player-management" class="hidden">
+                    <hr class="modal-divider">
                     <div class="form-group">
                         <label>Add Player:</label>
                         <input type="text" id="menu-player-name-input" placeholder="Player name...">
@@ -310,6 +303,23 @@
                     <button id="menu-btn-start-game" class="highlight">Start Game</button>
                 </div>
 
+                <hr class="modal-divider">
+
+                <!-- Playing As Section -->
+                <div class="form-group" id="menu-playing-as-container">
+                    <label for="menu-playing-as-select">Playing as:</label>
+                    <select id="menu-playing-as-select"></select>
+                </div>
+
+                <!-- Invite Links Section -->
+                <div id="menu-invite-links-container" class="hidden">
+                    <div class="form-group">
+                        <label>Invite Links:</label>
+                        <div id="menu-invite-links-list"></div>
+                    </div>
+                </div>
+
+                <!-- Auto-refresh -->
                 <div class="form-group">
                     <label class="checkbox-label">
                         <input type="checkbox" id="auto-refresh-toggle" checked>
