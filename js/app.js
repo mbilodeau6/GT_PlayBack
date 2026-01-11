@@ -2790,8 +2790,10 @@ const App = {
         const id = event.id;
 
         switch (event.action) {
-            case 'RollDice':
-                return `${playerName} rolled ${event.diceRoll}. [${id}]`;
+            case 'RollDice': {
+                const total = (event.die1 ?? 0) + (event.die2 ?? 0);
+                return `${playerName} rolled ${event.die1} + ${event.die2} = ${total}. [${id}]`;
+            }
 
             case 'PlaceFirstSettlement':
                 return `${playerName} placed first settlement at ${event.vertexId}. [${id}]`;
