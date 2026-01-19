@@ -40,6 +40,9 @@ const App = {
     // Action button state tracking (to avoid unnecessary DOM rebuilds)
     lastActionSignature: null,
 
+    // Event log tracking (to avoid unnecessary DOM rebuilds that disrupt scrolling)
+    lastRenderedEventId: null,
+
     init() {
         // Initialize board
         const svgElement = document.getElementById('board');
@@ -495,6 +498,8 @@ const App = {
         this.clearActiveNotifications();
         // Reset action signature to force button rebuild on new game
         this.lastActionSignature = null;
+        // Reset event log tracking to force rebuild on new game
+        this.lastRenderedEventId = null;
         // Clear debug log for fresh start
         this.clearDebugLog();
     },
@@ -2923,13 +2928,21 @@ const App = {
     // Render game event history to the history log
     renderEventLog() {
         const container = document.getElementById('history-log');
-        container.innerHTML = '';
 
         const eventRecord = this.currentGame?.eventRecord;
         if (!eventRecord || eventRecord.length === 0) return;
 
-        // Get last 20 events in chronological order (oldest first, newest last)
-        const recentEvents = eventRecord.slice(-20);
+        // Check if we need to re-render (only if new events have been added)
+        const latestEventId = eventRecord.length;
+        if (latestEventId === this.lastRenderedEventId) {
+            return; // No new events, preserve scroll position
+        }
+        this.lastRenderedEventId = latestEventId;
+
+        container.innerHTML = '';
+
+        // Get last 30 events in chronological order (oldest first, newest last)
+        const recentEvents = eventRecord.slice(-30);
 
         recentEvents.forEach(event => {
             const entry = document.createElement('div');
