@@ -1281,7 +1281,9 @@ const App = {
         if (isInTradingPhase && tradeInitiatorId === this.playingAsPlayerId) {
             const otherPlayers = this.currentGame?.players?.filter(p => p.id !== tradeInitiatorId) || [];
             const rejectResponses = pendingResponses.filter(r => r.responseType === 'Reject');
-            const allRejected = otherPlayers.length > 0 && rejectResponses.length === otherPlayers.length;
+            const rejectingPlayerIds = new Set(rejectResponses.map(r => r.playerId));
+            const allRejected = otherPlayers.length > 0 &&
+                                otherPlayers.every(p => rejectingPlayerIds.has(p.id));
 
             if (allRejected) {
                 // Show modal to inform user, then cancel on close
