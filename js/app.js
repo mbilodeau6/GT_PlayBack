@@ -2652,10 +2652,9 @@ const App = {
         document.getElementById(modalId).classList.add('hidden');
     },
 
-    // Close the trade rejected modal and auto-cancel the trade
+    // Close the trade rejected modal (user must manually cancel the trade)
     closeTradeRejectedModal() {
         document.getElementById('trade-rejected-modal').classList.add('hidden');
-        this.doCancelTrade();
     },
 
     // ==================== GAME OVER ====================
