@@ -73,6 +73,9 @@ const Board = {
         // Calculate and store tile positions
         this.calculateTilePositions();
 
+        // Update viewBox to fit all content
+        this.updateViewBox();
+
         // Render in order (bottom to top)
         this.renderTiles();
         this.renderRoads();
@@ -81,6 +84,33 @@ const Board = {
         this.renderVertexPlaceholders();
         this.renderBuildings();
         this.renderRobber();
+    },
+
+    updateViewBox() {
+        // Calculate bounds based on tile positions
+        let minX = Infinity, maxX = -Infinity;
+        let minY = Infinity, maxY = -Infinity;
+
+        this.tilePositions.forEach(pos => {
+            minX = Math.min(minX, pos.x);
+            maxX = Math.max(maxX, pos.x);
+            minY = Math.min(minY, pos.y);
+            maxY = Math.max(maxY, pos.y);
+        });
+
+        if (minX === Infinity) return; // No tiles
+
+        // Add padding for hex size, ports, and labels
+        const padding = HexMath.SIZE * 2.5;
+        minX -= padding;
+        maxX += padding;
+        minY -= padding;
+        maxY += padding;
+
+        const width = maxX - minX;
+        const height = maxY - minY;
+
+        this.svg.setAttribute('viewBox', `${minX} ${minY} ${width} ${height}`);
     },
 
     calculateTilePositions() {

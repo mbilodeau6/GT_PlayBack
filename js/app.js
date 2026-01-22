@@ -18,6 +18,11 @@ const App = {
     maxZoom: 2.5,
     zoomStep: 0.25,
 
+    // Pan state
+    panX: 0,
+    panY: 0,
+    panStep: 50,
+
     // Auto-refresh with tiered timing
     autoRefreshInterval: null,
     autoRefreshEnabled: true, // Enabled by default
@@ -75,6 +80,13 @@ const App = {
             e.preventDefault();
             this.zoom(e.deltaY > 0 ? -this.zoomStep : this.zoomStep);
         });
+
+        // Pan controls
+        document.getElementById('btn-pan-up').addEventListener('click', () => this.pan(0, -this.panStep));
+        document.getElementById('btn-pan-down').addEventListener('click', () => this.pan(0, this.panStep));
+        document.getElementById('btn-pan-left').addEventListener('click', () => this.pan(-this.panStep, 0));
+        document.getElementById('btn-pan-right').addEventListener('click', () => this.pan(this.panStep, 0));
+        document.getElementById('btn-pan-reset').addEventListener('click', () => this.resetPan());
 
         // Settings modal
         document.getElementById('btn-settings').addEventListener('click', () => this.openSettings());
@@ -251,16 +263,34 @@ const App = {
 
     zoom(delta) {
         this.zoomLevel = Math.max(this.minZoom, Math.min(this.maxZoom, this.zoomLevel + delta));
-        this.applyZoom();
+        this.applyTransform();
     },
 
     resetZoom() {
         this.zoomLevel = 1.0;
-        this.applyZoom();
+        this.applyTransform();
     },
 
     applyZoom() {
-        document.getElementById('board').style.transform = `scale(${this.zoomLevel})`;
+        this.applyTransform();
+    },
+
+    // ==================== PAN ====================
+
+    pan(deltaX, deltaY) {
+        this.panX += deltaX;
+        this.panY += deltaY;
+        this.applyTransform();
+    },
+
+    resetPan() {
+        this.panX = 0;
+        this.panY = 0;
+        this.applyTransform();
+    },
+
+    applyTransform() {
+        document.getElementById('board').style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.zoomLevel})`;
         document.getElementById('zoom-level').textContent = `${Math.round(this.zoomLevel * 100)}%`;
     },
 
