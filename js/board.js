@@ -571,9 +571,28 @@ const Board = {
         const midX = (pos1.x + pos2.x) / 2;
         const midY = (pos1.y + pos2.y) / 2;
 
-        // Offset label outward from board center
-        const offsetX = midX * 0.25;
-        const offsetY = midY * 0.25;
+        // Calculate perpendicular direction to the line between vertices
+        const dx = pos2.x - pos1.x;
+        const dy = pos2.y - pos1.y;
+
+        // Two perpendicular directions: (-dy, dx) and (dy, -dx)
+        // We need to pick the one pointing toward water (away from land)
+        const perpX = -dy;
+        const perpY = dx;
+
+        // Determine which perpendicular direction is toward water
+        // Use the vertex with direction property (1-tile vertex) to determine water side
+        const waterDir = this.getWaterDirection(v1, v2);
+
+        // Check if our perpendicular aligns with water direction
+        const dotProduct = perpX * waterDir.x + perpY * waterDir.y;
+        const sign = dotProduct >= 0 ? 1 : -1;
+
+        // Normalize and scale the offset
+        const length = Math.sqrt(perpX * perpX + perpY * perpY);
+        const offsetDistance = 30;
+        const offsetX = length > 0 ? sign * (perpX / length) * offsetDistance : 0;
+        const offsetY = length > 0 ? sign * (perpY / length) * offsetDistance : 0;
 
         // Background for label
         const labelText = this.getPortLabel(port.type);
@@ -624,6 +643,57 @@ const Board = {
             'Wool': '2:1 Wool Port'
         };
         return tooltips[type] || type;
+    },
+
+    getWaterDirection(v1, v2) {
+        // Get the outward (water) direction for a port based on its vertices
+        // For 1-tile vertices, use the direction property
+        // For 2-tile vertices, calculate based on tile positions
+
+        // Direction vectors for each compass direction (in pixel space, Y increases downward)
+        const directionVectors = {
+            'N': { x: 0, y: -1 },
+            'NE': { x: 0.866, y: -0.5 },
+            'E': { x: 1, y: 0 },
+            'SE': { x: 0.866, y: 0.5 },
+            'S': { x: 0, y: 1 },
+            'SW': { x: -0.866, y: 0.5 },
+            'W': { x: -1, y: 0 },
+            'NW': { x: -0.866, y: -0.5 }
+        };
+
+        // Try to find a vertex with a direction property (1-tile vertex)
+        if (v1.direction && directionVectors[v1.direction]) {
+            return directionVectors[v1.direction];
+        }
+        if (v2.direction && directionVectors[v2.direction]) {
+            return directionVectors[v2.direction];
+        }
+
+        // Both vertices have 2 tiles - calculate outward direction
+        // Find the tile that both vertices share
+        const sharedTileId = v1.tileIds.find(id => v2.tileIds.includes(id));
+        if (sharedTileId) {
+            const sharedTile = this.gameState.tiles.find(t => t.id === sharedTileId);
+            if (sharedTile) {
+                // The other tiles (one from each vertex) tell us where the land is
+                // Water is opposite to the shared tile from the vertex midpoint
+                const sharedTilePos = this.tilePositions.get(sharedTileId);
+                const v1Pos = this.getVertexPosition(v1);
+                const v2Pos = this.getVertexPosition(v2);
+                const midX = (v1Pos.x + v2Pos.x) / 2;
+                const midY = (v1Pos.y + v2Pos.y) / 2;
+
+                // Direction from shared tile toward midpoint (away from land)
+                const dirX = midX - sharedTilePos.x;
+                const dirY = midY - sharedTilePos.y;
+                const len = Math.sqrt(dirX * dirX + dirY * dirY);
+                return len > 0 ? { x: dirX / len, y: dirY / len } : { x: 0, y: -1 };
+            }
+        }
+
+        // Fallback
+        return { x: 0, y: -1 };
     },
 
     // ==================== SELECTION HIGHLIGHTING ====================
