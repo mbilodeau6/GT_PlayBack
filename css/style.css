@@ -1506,3 +1506,115 @@ select:focus {
     height: 24px;
     font-size: 0.75rem;
 }
+
+/* ==================== Landing Page ==================== */
+
+#landing-page {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #0a1628;
+    background-image: radial-gradient(circle at center, #1a2a4a 0%, #0a1628 100%);
+}
+
+#landing-content {
+    background-color: #16213e;
+    padding: 1.5rem;
+    border-radius: 12px;
+    width: 400px;
+    max-width: 90vw;
+    border: 2px solid #0f3460;
+}
+
+#landing-content h2 {
+    color: #e94560;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #0f3460;
+}
+
+#landing-error {
+    background-color: rgba(233, 69, 96, 0.15);
+    border: 1px solid #e94560;
+    color: #e94560;
+    padding: 0.6rem;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+}
+
+#btn-landing-start {
+    background-color: #2ecc71;
+}
+
+#btn-landing-start:hover:not(:disabled) {
+    background-color: #27ae60;
+}
+
+#landing-hint {
+    color: #666;
+    font-size: 0.8rem;
+    text-align: center;
+    margin-top: 0.5rem;
+    margin-bottom: 0;
+}
+
+#landing-invite-links-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.75rem;
+}
+
+#landing-invite-links-list .invite-link-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+}
+
+#landing-invite-links-list .invite-link-row .player-name {
+    flex: 1;
+    font-size: 0.9rem;
+}
+
+#landing-invite-modal p {
+    color: #aaa;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+#landing-invite-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.landing-invite-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.landing-invite-row input[type="text"] {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.landing-invite-row select {
+    width: auto;
+    min-width: 100px;
+    margin-bottom: 0;
+}
+
+#landing-invite-error {
+    background-color: rgba(233, 69, 96, 0.15);
+    border: 1px solid #e94560;
+    color: #e94560;
+    padding: 0.6rem;
+    border-radius: 6px;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+}

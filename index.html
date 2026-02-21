@@ -11,7 +11,7 @@
     <div id="app">
         <header>
             <h1>Presidio</h1>
-            <div id="game-info">
+            <div id="game-info" class="hidden">
                 <span id="playing-as-display">No game loaded</span>
                 <span class="info-separator hidden">|</span>
                 <span id="current-player"></span>
@@ -19,14 +19,70 @@
                 <span id="game-phase"></span>
             </div>
             <div class="header-buttons">
-                <button id="btn-refresh" class="icon-btn" title="Refresh" disabled><i class="fa-solid fa-arrows-rotate"></i></button>
+                <button id="btn-refresh" class="icon-btn hidden" title="Refresh" disabled><i class="fa-solid fa-arrows-rotate"></i></button>
                 <button id="btn-game-menu" class="icon-btn" title="Game Menu"><i class="fa-solid fa-bars"></i></button>
                 <button id="btn-settings" class="icon-btn" title="Settings"><i class="fa-solid fa-gear"></i></button>
+                <button id="btn-home" class="icon-btn hidden" title="Home"><i class="fa-solid fa-house"></i></button>
             </div>
         </header>
 
         <main>
-            <div id="board-container">
+            <!-- Landing Page -->
+            <div id="landing-page">
+                <div id="landing-content">
+                    <h2>New Game</h2>
+                    <div class="form-group">
+                        <label for="landing-player-name">Your Name:</label>
+                        <input type="text" id="landing-player-name" placeholder="Enter your name..." maxlength="20">
+                    </div>
+                    <div class="form-group">
+                        <label for="landing-game-type">Game Type:</label>
+                        <select id="landing-game-type">
+                            <option value="Starter">Starter</option>
+                            <option value="Default">Default</option>
+                            <option value="Presidio1">Presidio1</option>
+                            <option value="Expansion6">Expansion6</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="landing-player-color">Your Color:</label>
+                        <select id="landing-player-color">
+                            <option value="Red">Red</option>
+                            <option value="Blue">Blue</option>
+                            <option value="White">White</option>
+                            <option value="Orange">Orange</option>
+                            <option value="Brown">Brown</option>
+                            <option value="Green">Green</option>
+                            <option value="Yellow">Yellow</option>
+                            <option value="Purple">Purple</option>
+                        </select>
+                    </div>
+                    <div class="button-group">
+                        <div class="form-group" style="flex:1">
+                            <label for="landing-total-players">Players:</label>
+                            <select id="landing-total-players">
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4" selected>4</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex:1">
+                            <label for="landing-bot-count">Bots:</label>
+                            <select id="landing-bot-count">
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3" selected>3</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="landing-error" class="hidden"></div>
+                    <button id="btn-landing-start" class="highlight" disabled>Start Game</button>
+                    <p id="landing-hint">You can also use the <i class="fa-solid fa-bars"></i> Game Menu to load an existing game.</p>
+                </div>
+            </div>
+
+            <div id="board-container" class="hidden">
                 <div id="zoom-controls">
                     <button id="btn-zoom-in" title="Zoom In">+</button>
                     <span id="zoom-level">100%</span>
@@ -53,7 +109,7 @@
                 </div>
             </div>
 
-            <aside id="sidebar">
+            <aside id="sidebar" class="hidden">
                 <!-- Players Section -->
                 <section id="players-section">
                     <div id="players-list"></div>
@@ -346,6 +402,42 @@
 
                 <div class="button-group">
                     <button id="btn-close-game-menu">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confirm Home Modal -->
+        <div id="confirm-home-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>Leave Game?</h2>
+                <p>Are you sure you want to leave the current game and return to the home screen?</p>
+                <div class="button-group">
+                    <button id="btn-confirm-home">Leave</button>
+                    <button id="btn-cancel-home" class="secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Landing Invite Links Modal -->
+        <div id="landing-invite-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2 id="landing-invite-title">Add Players</h2>
+                <!-- Phase 1: Name/color input -->
+                <div id="landing-invite-input-phase">
+                    <p>Enter the name and color for each player:</p>
+                    <div id="landing-invite-inputs"></div>
+                    <div id="landing-invite-error" class="hidden"></div>
+                    <div class="button-group" style="margin-top: 1rem;">
+                        <button id="btn-landing-create-invites" disabled>Create Invites</button>
+                    </div>
+                </div>
+                <!-- Phase 2: Share links -->
+                <div id="landing-invite-links-phase" class="hidden">
+                    <p>Share these links with the other players so they can join:</p>
+                    <div id="landing-invite-links-list"></div>
+                    <div class="button-group" style="margin-top: 1rem;">
+                        <button id="btn-landing-continue" class="highlight">Start Game</button>
+                    </div>
                 </div>
             </div>
         </div>

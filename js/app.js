@@ -11,6 +11,7 @@ const App = {
     selectionMode: null, // 'vertex', 'edge', 'tile'
     selectableIds: [],
     pendingAction: null,
+    landingPageActive: false,
 
     // Zoom state
     zoomLevel: 1.0,
@@ -68,7 +69,20 @@ const App = {
         Sounds.loadVolume();
 
         // Check for URL parameters (game invite link)
-        this.handleUrlParameters();
+        const hasInviteParams = this.handleUrlParameters();
+
+        // Decide initial view
+        if (hasInviteParams) {
+            // Invite link detected — show game UI (async load in progress)
+            this.showGameUI();
+        } else if (localStorage.getItem('catan_current_game')) {
+            // Saved game exists — show game UI and load it
+            this.showGameUI();
+            this.loadSavedGame();
+        } else {
+            // No game — show landing page
+            this.showLandingPage();
+        }
     },
 
     bindEventHandlers() {
@@ -99,6 +113,9 @@ const App = {
 
         // Game menu modal
         document.getElementById('btn-game-menu').addEventListener('click', () => this.openGameMenu());
+        document.getElementById('btn-home').addEventListener('click', () => this.goHome());
+        document.getElementById('btn-confirm-home').addEventListener('click', () => this.goHomeConfirmed());
+        document.getElementById('btn-cancel-home').addEventListener('click', () => this.closeModal('confirm-home-modal'));
         document.getElementById('btn-close-game-menu').addEventListener('click', () => this.closeGameMenu());
         document.getElementById('menu-btn-new-game').addEventListener('click', () => this.createNewGame());
         document.getElementById('menu-btn-load-game').addEventListener('click', () => this.loadGameById());
@@ -129,6 +146,15 @@ const App = {
         document.getElementById('btn-close-trade-rejected').addEventListener('click', () => this.closeTradeRejectedModal());
         document.getElementById('btn-continue-activity').addEventListener('click', () => this.closeNoActivityModal());
         document.getElementById('btn-close-error').addEventListener('click', () => this.closeModal('error-modal'));
+
+        // Landing page controls
+        document.getElementById('landing-player-name').addEventListener('input', (e) => {
+            document.getElementById('btn-landing-start').disabled = !e.target.value.trim();
+        });
+        document.getElementById('landing-total-players').addEventListener('change', () => this.updateLandingBotOptions());
+        document.getElementById('btn-landing-start').addEventListener('click', () => this.startGameFromLanding());
+        document.getElementById('btn-landing-create-invites').addEventListener('click', () => this.createLandingInvites());
+        document.getElementById('btn-landing-continue').addEventListener('click', () => this.continueLandingInvite());
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => this.handleKeyboardShortcut(e));
@@ -244,6 +270,8 @@ const App = {
             'game-over-modal',
             'no-activity-modal',
             'game-menu-modal',
+            'landing-invite-modal',
+            'confirm-home-modal',
             'error-modal'
         ];
 
@@ -572,6 +600,28 @@ const App = {
         }
     },
 
+    async loadSavedGame() {
+        const savedGameId = localStorage.getItem('catan_current_game');
+        if (!savedGameId) return;
+
+        // Try to restore playingAs from sessionStorage before the API call
+        // so the server returns private player data
+        if (!this.playingAsPlayerId) {
+            const savedPlayerId = sessionStorage.getItem(`catan_playing_as_${savedGameId}`);
+            if (savedPlayerId) {
+                this.playingAsPlayerId = savedPlayerId;
+            }
+        }
+
+        const response = await API.getGame(savedGameId, this.playingAsPlayerId);
+        if (response.success) {
+            this.resetGameStateFlags(response.gameState);
+            this.handleGameResponse(response);
+            this.populateMenuPlayerDropdown();
+            this.updateGameMenuUI();
+        }
+    },
+
     // ==================== URL PARAMETERS (INVITE LINKS) ====================
 
     handleUrlParameters() {
@@ -580,7 +630,7 @@ const App = {
         const playerId = params.get('player');
 
         // Ignore if no game parameter
-        if (!gameId) return;
+        if (!gameId) return false;
 
         // Clear URL parameters (so refresh doesn't re-trigger)
         this.clearUrlParameters();
@@ -590,12 +640,399 @@ const App = {
 
         // Load the game with the specified player
         this.loadGameFromInviteLink(gameId, playerId);
+        return true;
     },
 
     clearUrlParameters() {
         const url = new URL(window.location.href);
         url.search = '';
         window.history.replaceState({}, document.title, url.pathname);
+    },
+
+    // ==================== LANDING PAGE ====================
+
+    showLandingPage() {
+        this.landingPageActive = true;
+        document.getElementById('landing-page').classList.remove('hidden');
+        document.getElementById('board-container').classList.add('hidden');
+        document.getElementById('sidebar').classList.add('hidden');
+        document.getElementById('game-info').classList.add('hidden');
+        document.getElementById('btn-refresh').classList.add('hidden');
+        document.getElementById('btn-home').classList.add('hidden');
+
+        // Reset the Start button state
+        const startBtn = document.getElementById('btn-landing-start');
+        startBtn.textContent = 'Start Game';
+        startBtn.disabled = !document.getElementById('landing-player-name').value.trim();
+    },
+
+    showGameUI() {
+        this.landingPageActive = false;
+        document.getElementById('landing-page').classList.add('hidden');
+        document.getElementById('board-container').classList.remove('hidden');
+        document.getElementById('sidebar').classList.remove('hidden');
+        document.getElementById('game-info').classList.remove('hidden');
+        document.getElementById('btn-refresh').classList.remove('hidden');
+        document.getElementById('btn-home').classList.remove('hidden');
+    },
+
+    goHome() {
+        // If a game is in progress (not over), confirm before leaving
+        const phase = this.currentGame?.phase?.phaseState;
+        if (this.currentGame && phase && phase !== 'GameOver') {
+            document.getElementById('confirm-home-modal').classList.remove('hidden');
+            return;
+        }
+
+        this.goHomeConfirmed();
+    },
+
+    goHomeConfirmed() {
+        this.closeModal('confirm-home-modal');
+        this.stopAutoRefresh();
+        localStorage.removeItem('catan_current_game');
+        this.currentGame = null;
+        this.currentGameId = null;
+        this.possibleActions = [];
+        this.playingAsPlayerId = null;
+        this.showLandingPage();
+    },
+
+    showLandingError(message) {
+        const el = document.getElementById('landing-error');
+        el.textContent = message;
+        el.classList.remove('hidden');
+    },
+
+    hideLandingError() {
+        document.getElementById('landing-error').classList.add('hidden');
+    },
+
+    updateLandingBotOptions() {
+        const totalPlayers = parseInt(document.getElementById('landing-total-players').value);
+        const botSelect = document.getElementById('landing-bot-count');
+        const currentBots = parseInt(botSelect.value);
+        const maxBots = totalPlayers - 1;
+
+        botSelect.innerHTML = '';
+        for (let i = 0; i <= maxBots; i++) {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = i;
+            botSelect.appendChild(option);
+        }
+
+        // Default to max bots (all opponents are bots)
+        botSelect.value = Math.min(currentBots, maxBots) || maxBots;
+    },
+
+    async startGameFromLanding() {
+        const playerToken = this.getPlayerToken();
+        if (!playerToken) {
+            this.showLandingError('You must set a Player Token first. Click the \u2699 Settings gear in the top-right.');
+            return;
+        }
+
+        const playerName = document.getElementById('landing-player-name').value.trim();
+        if (!playerName) {
+            this.showLandingError('Please enter your name.');
+            return;
+        }
+
+        this.hideLandingError();
+
+        const gameType = document.getElementById('landing-game-type').value;
+        const playerColor = document.getElementById('landing-player-color').value;
+        const totalPlayers = parseInt(document.getElementById('landing-total-players').value);
+        const botCount = parseInt(document.getElementById('landing-bot-count').value);
+        const humanSlots = totalPlayers - 1 - botCount;
+
+        const startBtn = document.getElementById('btn-landing-start');
+        startBtn.disabled = true;
+        startBtn.textContent = 'Creating...';
+
+        try {
+            // 1. Create the game
+            const createResponse = await API.createGame(gameType, playerToken);
+            if (!createResponse.success) {
+                this.showLandingError(createResponse.errorMessage || 'Failed to create game');
+                startBtn.disabled = false;
+                startBtn.textContent = 'Start Game';
+                return;
+            }
+
+            const gameId = createResponse.gameState.id;
+
+            // 2. Add the creator as first player
+            const creatorResponse = await API.addPlayer(gameId, playerName, false, playerColor);
+            if (!creatorResponse.success) {
+                this.showLandingError(creatorResponse.errorMessage || 'Failed to add player');
+                startBtn.disabled = false;
+                startBtn.textContent = 'Start Game';
+                return;
+            }
+
+            const creatorPlayerId = creatorResponse.gameState.players[
+                creatorResponse.gameState.players.length - 1
+            ].id;
+
+            // 3. Set playing as the creator
+            this.playingAsPlayerId = creatorPlayerId;
+            this.savePlayingAsPlayer(creatorPlayerId);
+            this.saveGameId(gameId);
+
+            // Store landing context for use by the invite modal
+            this._landingContext = { gameId, playerColor, botCount };
+
+            // 4. If extra humans, show invite modal for name/color input; otherwise add bots and start
+            if (humanSlots > 0) {
+                this.showLandingInviteInputs(humanSlots, playerColor);
+            } else {
+                await this.addBotsAndStartGame(gameId, playerColor, botCount);
+            }
+        } catch (err) {
+            this.showLandingError('An error occurred: ' + err.message);
+            startBtn.disabled = false;
+            startBtn.textContent = 'Start Game';
+        }
+    },
+
+    async addBotsAndStartGame(gameId, creatorColor, botCount) {
+        const allColors = ['Red', 'Blue', 'White', 'Orange', 'Brown', 'Green', 'Yellow', 'Purple'];
+        // Exclude creator color and any human player colors already added
+        const usedColors = new Set([creatorColor]);
+        if (this.currentGame?.players) {
+            this.currentGame.players.forEach(p => usedColors.add(p.color));
+        }
+        const availableColors = allColors.filter(c => !usedColors.has(c));
+
+        // Also exclude names already used by human players
+        const usedNames = new Set();
+        if (this.currentGame?.players) {
+            this.currentGame.players.forEach(p => usedNames.add(p.name));
+        }
+        const botNamePool = ['Hal', 'WallE', 'Data', 'Marvin'].filter(n => !usedNames.has(n));
+
+        let colorIndex = 0;
+        for (let i = 0; i < botCount; i++) {
+            const botName = botNamePool[i % botNamePool.length];
+            const botColor = availableColors[colorIndex++ % availableColors.length];
+            const botResponse = await API.addPlayer(gameId, botName, true, botColor);
+            if (!botResponse.success) {
+                this.showLandingError(botResponse.errorMessage || `Failed to add bot ${botName}`);
+                document.getElementById('btn-landing-start').disabled = false;
+                document.getElementById('btn-landing-start').textContent = 'Start Game';
+                return;
+            }
+            this.currentGame = botResponse.gameState;
+        }
+
+        // Start the game
+        const response = await API.startGame(gameId);
+        if (!response.success) {
+            this.showLandingError(response.errorMessage || 'Failed to start game');
+            document.getElementById('btn-landing-start').disabled = false;
+            document.getElementById('btn-landing-start').textContent = 'Start Game';
+            return;
+        }
+
+        this.resetGameStateFlags(response.gameState);
+        this.handleGameResponse(response);
+    },
+
+    showLandingInviteInputs(humanSlotCount, creatorColor) {
+        const allColors = ['Red', 'Blue', 'White', 'Orange', 'Brown', 'Green', 'Yellow', 'Purple'];
+        const otherColors = allColors.filter(c => c !== creatorColor);
+
+        const container = document.getElementById('landing-invite-inputs');
+        container.innerHTML = '';
+
+        for (let i = 0; i < humanSlotCount; i++) {
+            const row = document.createElement('div');
+            row.className = 'landing-invite-row';
+
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.placeholder = `Player ${i + 2} name...`;
+            nameInput.maxLength = 20;
+            nameInput.className = 'landing-invite-name';
+            nameInput.addEventListener('input', () => this.validateLandingInviteInputs());
+
+            const colorSelect = document.createElement('select');
+            colorSelect.className = 'landing-invite-color';
+            otherColors.forEach((color, idx) => {
+                const option = document.createElement('option');
+                option.value = color;
+                option.textContent = color;
+                colorSelect.appendChild(option);
+            });
+            // Pre-select a different color for each slot
+            colorSelect.value = otherColors[i % otherColors.length];
+
+            row.appendChild(nameInput);
+            row.appendChild(colorSelect);
+            container.appendChild(row);
+        }
+
+        // Reset modal to input phase
+        document.getElementById('landing-invite-title').textContent = 'Add Players';
+        document.getElementById('landing-invite-input-phase').classList.remove('hidden');
+        document.getElementById('landing-invite-links-phase').classList.add('hidden');
+        document.getElementById('landing-invite-error').classList.add('hidden');
+        document.getElementById('btn-landing-create-invites').disabled = true;
+
+        document.getElementById('landing-invite-modal').classList.remove('hidden');
+    },
+
+    validateLandingInviteInputs() {
+        const nameInputs = document.querySelectorAll('.landing-invite-name');
+        const allFilled = Array.from(nameInputs).every(input => input.value.trim().length > 0);
+        document.getElementById('btn-landing-create-invites').disabled = !allFilled;
+    },
+
+    async createLandingInvites() {
+        const ctx = this._landingContext;
+        if (!ctx) return;
+
+        const nameInputs = document.querySelectorAll('.landing-invite-name');
+        const colorSelects = document.querySelectorAll('.landing-invite-color');
+
+        const btn = document.getElementById('btn-landing-create-invites');
+        btn.disabled = true;
+        btn.textContent = 'Adding players...';
+        document.getElementById('landing-invite-error').classList.add('hidden');
+
+        try {
+            // Add human players via API
+            const addedHumans = [];
+            for (let i = 0; i < nameInputs.length; i++) {
+                const name = nameInputs[i].value.trim();
+                const color = colorSelects[i].value;
+                const response = await API.addPlayer(ctx.gameId, name, false, color);
+                if (!response.success) {
+                    const errorEl = document.getElementById('landing-invite-error');
+                    errorEl.textContent = response.errorMessage || `Failed to add ${name}`;
+                    errorEl.classList.remove('hidden');
+                    btn.disabled = false;
+                    btn.textContent = 'Create Invites';
+                    return;
+                }
+                this.currentGame = response.gameState;
+                const addedPlayer = response.gameState.players[
+                    response.gameState.players.length - 1
+                ];
+                addedHumans.push(addedPlayer);
+            }
+
+            // Now add bots (they pick from remaining names/colors)
+            await this.addLandingBots(ctx.gameId, ctx.playerColor, ctx.botCount);
+
+            // Switch to links phase
+            this.showLandingInviteLinks(ctx.gameId, addedHumans);
+        } catch (err) {
+            const errorEl = document.getElementById('landing-invite-error');
+            errorEl.textContent = 'An error occurred: ' + err.message;
+            errorEl.classList.remove('hidden');
+            btn.disabled = false;
+            btn.textContent = 'Create Invites';
+        }
+    },
+
+    async addLandingBots(gameId, creatorColor, botCount) {
+        if (botCount === 0) return;
+
+        const allColors = ['Red', 'Blue', 'White', 'Orange', 'Brown', 'Green', 'Yellow', 'Purple'];
+        const usedColors = new Set();
+        if (this.currentGame?.players) {
+            this.currentGame.players.forEach(p => usedColors.add(p.color));
+        }
+        const availableColors = allColors.filter(c => !usedColors.has(c));
+
+        const usedNames = new Set();
+        if (this.currentGame?.players) {
+            this.currentGame.players.forEach(p => usedNames.add(p.name));
+        }
+        const botNamePool = ['Hal', 'WallE', 'Data', 'Marvin'].filter(n => !usedNames.has(n));
+
+        let colorIndex = 0;
+        for (let i = 0; i < botCount; i++) {
+            const botName = botNamePool[i % botNamePool.length];
+            const botColor = availableColors[colorIndex++ % availableColors.length];
+            const botResponse = await API.addPlayer(gameId, botName, true, botColor);
+            if (!botResponse.success) {
+                throw new Error(botResponse.errorMessage || `Failed to add bot ${botName}`);
+            }
+            this.currentGame = botResponse.gameState;
+        }
+    },
+
+    showLandingInviteLinks(gameId, humanPlayers) {
+        const container = document.getElementById('landing-invite-links-list');
+        container.innerHTML = '';
+        const baseUrl = window.location.origin;
+
+        humanPlayers.forEach(player => {
+            const row = document.createElement('div');
+            row.className = 'invite-link-row';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'player-name';
+            nameSpan.textContent = player.name;
+            nameSpan.style.color = this.getPlayerCSSColor(player.color);
+
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'copy-link-btn';
+            copyBtn.innerHTML = '<i class="fa-solid fa-link"></i>';
+            copyBtn.title = `Copy invite link for ${player.name}`;
+            copyBtn.addEventListener('click', () => {
+                const inviteUrl = `${baseUrl}/?game=${gameId}&player=${player.id}`;
+                navigator.clipboard.writeText(inviteUrl).then(() => {
+                    copyBtn.classList.add('copied');
+                    copyBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
+                    setTimeout(() => {
+                        copyBtn.classList.remove('copied');
+                        copyBtn.innerHTML = '<i class="fa-solid fa-link"></i>';
+                    }, 2000);
+                }).catch(() => {
+                    this.showError('Failed to copy link to clipboard');
+                });
+            });
+
+            row.appendChild(nameSpan);
+            row.appendChild(copyBtn);
+            container.appendChild(row);
+        });
+
+        // Switch to links phase
+        document.getElementById('landing-invite-title').textContent = 'Share Invite Links';
+        document.getElementById('landing-invite-input-phase').classList.add('hidden');
+        document.getElementById('landing-invite-links-phase').classList.remove('hidden');
+    },
+
+    async continueLandingInvite() {
+        const btn = document.getElementById('btn-landing-continue');
+        btn.disabled = true;
+        btn.textContent = 'Starting...';
+
+        try {
+            const gameId = this.currentGameId;
+            const response = await API.startGame(gameId);
+            if (!response.success) {
+                this.showError(response.errorMessage || 'Failed to start game');
+                btn.disabled = false;
+                btn.textContent = 'Start Game';
+                return;
+            }
+
+            this.closeModal('landing-invite-modal');
+            this._landingContext = null;
+            this.resetGameStateFlags(response.gameState);
+            this.handleGameResponse(response);
+        } catch (err) {
+            this.showError('Failed to start game: ' + err.message);
+            btn.disabled = false;
+            btn.textContent = 'Start Game';
+        }
     },
 
     async loadGameFromInviteLink(gameId, playerId) {
@@ -1003,6 +1440,11 @@ const App = {
     },
 
     handleGameResponse(response) {
+        // Transition from landing page to game UI if needed
+        if (this.landingPageActive) {
+            this.showGameUI();
+        }
+
         const previousPlayerId = this.previousCurrentPlayerId;
         const newPlayerId = response.gameState?.phase?.currentPlayerId;
 
