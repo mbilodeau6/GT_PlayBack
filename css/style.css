@@ -832,14 +832,6 @@ select:focus {
     color: #27ae60;
 }
 
-#menu-player-management {
-    margin-bottom: 1rem;
-}
-
-#menu-player-management .form-group {
-    margin-bottom: 0.75rem;
-}
-
 /* Trade Modal */
 #trade-offer-section,
 #trade-request-section {
@@ -973,6 +965,64 @@ select:focus {
 
 .resource-option.resource-Wool {
     background-color: var(--resource-wool);
+}
+
+/* ==================== Help Modal ==================== */
+
+#help-modal .modal-content {
+    max-width: 550px;
+}
+
+.help-section {
+    margin-bottom: 1rem;
+}
+
+.help-section h3 {
+    color: #e94560;
+    font-size: 1.1rem;
+    margin-bottom: 0.35rem;
+}
+
+.help-section p {
+    color: #ccc;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.help-section ul {
+    list-style: disc;
+    padding-left: 1.25rem;
+    color: #ccc;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.help-section li {
+    margin-bottom: 0.35rem;
+}
+
+.help-section .resource-box {
+    vertical-align: middle;
+    position: relative;
+    top: -1px;
+}
+
+.help-cost-table {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.help-cost-row {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.help-cost-label {
+    color: #ccc;
+    font-size: 1rem;
+    min-width: 80px;
 }
 
 /* ==================== SVG Board Styles ==================== */

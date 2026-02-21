@@ -22,6 +22,7 @@
                 <button id="btn-refresh" class="icon-btn hidden" title="Refresh" disabled><i class="fa-solid fa-arrows-rotate"></i></button>
                 <button id="btn-game-menu" class="icon-btn" title="Game Menu"><i class="fa-solid fa-bars"></i></button>
                 <button id="btn-settings" class="icon-btn" title="Settings"><i class="fa-solid fa-gear"></i></button>
+                <button id="btn-help" class="icon-btn" title="How to Play"><i class="fa-solid fa-circle-question"></i></button>
                 <button id="btn-home" class="icon-btn hidden" title="Home"><i class="fa-solid fa-house"></i></button>
             </div>
         </header>
@@ -334,48 +335,6 @@
                     </div>
                 </div>
 
-                <!-- Create Game Section -->
-                <div class="form-group">
-                    <label>New Game:</label>
-                    <div class="button-group">
-                        <button id="menu-btn-new-game">Create</button>
-                        <select id="menu-game-type-select">
-                            <option value="Starter">Starter</option>
-                            <option value="Default">Default</option>
-                            <option value="Presidio1">Presidio1</option>
-                            <option value="Expansion6">Expansion6</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Player Management (during setup) -->
-                <div id="menu-player-management" class="hidden">
-                    <hr class="modal-divider">
-                    <div class="form-group">
-                        <label>Add Player:</label>
-                        <input type="text" id="menu-player-name-input" placeholder="Player name...">
-                        <div class="button-group">
-                            <select id="menu-player-color-select">
-                                <option value="Red">Red</option>
-                                <option value="Blue">Blue</option>
-                                <option value="White">White</option>
-                                <option value="Orange">Orange</option>
-                                <option value="Brown">Brown</option>
-                                <option value="Green">Green</option>
-                                <option value="Yellow">Yellow</option>
-                                <option value="Purple">Purple</option>
-                            </select>
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="menu-player-is-bot"> Bot
-                            </label>
-                        </div>
-                        <button id="menu-btn-add-player">Add Player</button>
-                    </div>
-                    <button id="menu-btn-start-game" class="highlight">Start Game</button>
-                </div>
-
-                <hr class="modal-divider">
-
                 <!-- Playing As Section -->
                 <div class="form-group" id="menu-playing-as-container">
                     <label for="menu-playing-as-select">Playing as:</label>
@@ -438,6 +397,109 @@
                     <div class="button-group" style="margin-top: 1rem;">
                         <button id="btn-landing-continue" class="highlight">Start Game</button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Modal -->
+        <div id="help-modal" class="modal hidden">
+            <div class="modal-content help-content">
+                <h2>How to Play</h2>
+
+                <div class="help-section">
+                    <h3>Goal</h3>
+                    <p>Race to be the first player to collect <strong>10 victory points</strong> and win the game!</p>
+                </div>
+
+                <div class="help-section">
+                    <h3>Players</h3>
+                    <p>Each game has 2 to 4 players. You can fill empty seats with computer-controlled bots, or invite friends to play. To invite friends, the person who creates the game will receive invite links to share with each player.</p>
+                </div>
+
+                <div class="help-section">
+                    <h3>Earning Victory Points</h3>
+                    <ul>
+                        <li><strong>Settlement</strong> &mdash; worth 1 victory point each.</li>
+                        <li><strong>City</strong> &mdash; worth 2 victory points each. Built by upgrading an existing settlement.</li>
+                        <li><strong>Longest Road</strong> &mdash; worth 2 victory points. The first player to build a continuous chain of at least 5 roads earns this bonus. Another player can steal it by building an even longer chain.</li>
+                        <li><strong>Largest Army</strong> &mdash; worth 2 victory points. The first player to play at least 3 Knight cards earns this bonus. Another player can steal it by playing even more Knights.</li>
+                        <li><strong>Victory Point cards</strong> &mdash; worth 1 victory point each. These are a type of development card (see below).</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h3>Resources</h3>
+                    <p>You collect resources to build things. There are 5 types:</p>
+                    <ul>
+                        <li><span class="resource-box resource-Wood" title="Wood"></span> Wood</li>
+                        <li><span class="resource-box resource-Brick" title="Brick"></span> Brick</li>
+                        <li><span class="resource-box resource-Wool" title="Wool"></span> Wool</li>
+                        <li><span class="resource-box resource-Grain" title="Grain"></span> Grain</li>
+                        <li><span class="resource-box resource-Ore" title="Ore"></span> Ore</li>
+                    </ul>
+                    <p>Each turn begins with a dice roll. Every tile on the board has a number on it. When that number is rolled, the tile produces its resource for any player who has a settlement or city next to it. Cities produce double.</p>
+                </div>
+
+                <div class="help-section">
+                    <h3>Building Costs</h3>
+                    <p>Spend resources to build. Each item costs:</p>
+                    <div class="help-cost-table">
+                        <div class="help-cost-row">
+                            <span class="help-cost-label">Road</span>
+                            <span class="resource-box resource-Wood" title="Wood"></span>
+                            <span class="resource-box resource-Brick" title="Brick"></span>
+                        </div>
+                        <div class="help-cost-row">
+                            <span class="help-cost-label">Settlement</span>
+                            <span class="resource-box resource-Wood" title="Wood"></span>
+                            <span class="resource-box resource-Brick" title="Brick"></span>
+                            <span class="resource-box resource-Wool" title="Wool"></span>
+                            <span class="resource-box resource-Grain" title="Grain"></span>
+                        </div>
+                        <div class="help-cost-row">
+                            <span class="help-cost-label">City</span>
+                            <span class="resource-box resource-Grain" title="Grain"></span>
+                            <span class="resource-box resource-Grain" title="Grain"></span>
+                            <span class="resource-box resource-Ore" title="Ore"></span>
+                            <span class="resource-box resource-Ore" title="Ore"></span>
+                            <span class="resource-box resource-Ore" title="Ore"></span>
+                        </div>
+                        <div class="help-cost-row">
+                            <span class="help-cost-label">Dev Card</span>
+                            <span class="resource-box resource-Wool" title="Wool"></span>
+                            <span class="resource-box resource-Grain" title="Grain"></span>
+                            <span class="resource-box resource-Ore" title="Ore"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h3>Rolling a 7</h3>
+                    <p>When a 7 is rolled, no one collects resources. Instead, any player holding more than 7 resource cards must discard half of them (rounded down). Then the player who rolled moves the robber to any other tile. That tile stops producing until the robber is moved again. The player also steals one random resource card from someone who has a settlement or city on the blocked tile.</p>
+                </div>
+
+                <div class="help-section">
+                    <h3>Development Cards</h3>
+                    <p>You can buy development cards for a chance at powerful effects. There are 5 types:</p>
+                    <ul>
+                        <li><strong>Knight</strong> &mdash; Move the robber to a new tile and steal a resource from a player there. Playing Knights also counts toward the Largest Army bonus.</li>
+                        <li><strong>Year of Plenty</strong> &mdash; Pick any 2 resources from the bank for free.</li>
+                        <li><strong>Monopoly</strong> &mdash; Name one resource type. Every other player must hand over all cards of that type to you.</li>
+                        <li><strong>Road Building</strong> &mdash; Place 2 roads on the board for free.</li>
+                        <li><strong>Victory Point</strong> &mdash; Worth 1 victory point. Stays hidden from other players until you win.</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h3>Trading</h3>
+                    <ul>
+                        <li><strong>Bank trade</strong> &mdash; You can always trade 4 of the same resource to the bank for any 1 resource you choose. If you have a settlement or city on a port, you get a better rate: 3:1 ports let you trade any 3 matching resources, and 2:1 ports let you trade 2 of a specific resource.</li>
+                        <li><strong>Player trade</strong> &mdash; On your turn, you can propose a trade to all other players. They can choose to accept or reject your offer.</li>
+                    </ul>
+                </div>
+
+                <div class="button-group" style="margin-top: 1rem;">
+                    <button id="btn-close-help">Close</button>
                 </div>
             </div>
         </div>
