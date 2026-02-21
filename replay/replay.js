@@ -410,7 +410,7 @@ const Replay = {
         }
     },
 
-    // Standard Catan building costs
+    // Building resource costs
     buildingCosts: {
         Road: { Brick: 1, Wood: 1 },
         Settlement: { Brick: 1, Wood: 1, Grain: 1, Wool: 1 },

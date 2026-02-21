@@ -21,7 +21,7 @@ const Sounds = {
     // Set master volume (0.0 to 1.0)
     setVolume(level) {
         this.masterVolume = Math.max(0, Math.min(1, level));
-        localStorage.setItem('catan_sound_volume', this.masterVolume.toString());
+        localStorage.setItem('presidio_sound_volume', this.masterVolume.toString());
     },
 
     // Get current volume
@@ -31,7 +31,7 @@ const Sounds = {
 
     // Load saved volume from localStorage
     loadVolume() {
-        const saved = localStorage.getItem('catan_sound_volume');
+        const saved = localStorage.getItem('presidio_sound_volume');
         if (saved !== null) {
             this.masterVolume = parseFloat(saved);
         }

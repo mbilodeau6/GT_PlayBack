@@ -1,5 +1,5 @@
 /**
- * Hex grid mathematics for Catan board rendering.
+ * Hex grid mathematics for the Presidio board rendering.
  * Uses pointy-top hexagons with offset coordinates.
  */
 
@@ -19,7 +19,7 @@ const HexMath = {
      *
      * Looking at the data:
      * - Center tile (Desert) is at x:0, y:0
-     * - Tiles form a standard Catan hex pattern
+     * - Tiles form a hex pattern that is a map of the board, with rows offset.
      */
     tileToPixel(x, y) {
         // For pointy-top hexagons in an offset grid:

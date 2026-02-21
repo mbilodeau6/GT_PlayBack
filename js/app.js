@@ -60,6 +60,7 @@ const App = {
         Board.onTileClick = (tileId) => this.handleBoardClick('tile', tileId);
 
         this.bindEventHandlers();
+        this.migrateStorageKeys();
         this.loadSavedGameId();
 
         // Load auto-refresh setting from session (defaults to false)
@@ -75,7 +76,7 @@ const App = {
         if (hasInviteParams) {
             // Invite link detected — show game UI (async load in progress)
             this.showGameUI();
-        } else if (localStorage.getItem('catan_current_game')) {
+        } else if (localStorage.getItem('presidio_current_game')) {
             // Saved game exists — show game UI and load it
             this.showGameUI();
             this.loadSavedGame();
@@ -331,7 +332,7 @@ const App = {
         document.getElementById('volume-value').textContent = `${volume}%`;
 
         // Load player token
-        const playerToken = localStorage.getItem('catan_player_token') || '';
+        const playerToken = localStorage.getItem('presidio_player_token') || '';
         document.getElementById('player-token-input').value = playerToken;
 
         document.getElementById('settings-modal').classList.remove('hidden');
@@ -341,16 +342,16 @@ const App = {
         // Save player token
         const playerToken = document.getElementById('player-token-input').value.trim();
         if (playerToken) {
-            localStorage.setItem('catan_player_token', playerToken);
+            localStorage.setItem('presidio_player_token', playerToken);
         } else {
-            localStorage.removeItem('catan_player_token');
+            localStorage.removeItem('presidio_player_token');
         }
 
         this.closeSettings();
     },
 
     getPlayerToken() {
-        return localStorage.getItem('catan_player_token') || null;
+        return localStorage.getItem('presidio_player_token') || null;
     },
 
     onVolumeChange(value) {
@@ -361,7 +362,7 @@ const App = {
 
     setAutoRefreshEnabled(enabled) {
         this.autoRefreshEnabled = enabled;
-        sessionStorage.setItem('catan_auto_refresh', enabled ? 'true' : 'false');
+        sessionStorage.setItem('presidio_auto_refresh', enabled ? 'true' : 'false');
 
         if (enabled && this.currentGameId) {
             this.startAutoRefresh();
@@ -375,7 +376,7 @@ const App = {
     },
 
     loadAutoRefreshSetting() {
-        const saved = sessionStorage.getItem('catan_auto_refresh');
+        const saved = sessionStorage.getItem('presidio_auto_refresh');
         // Default to true if not set
         return saved === null ? true : saved === 'true';
     },
@@ -589,25 +590,59 @@ const App = {
 
     saveGameId(gameId) {
         this.currentGameId = gameId;
-        localStorage.setItem('catan_current_game', gameId);
+        localStorage.setItem('presidio_current_game', gameId);
         document.getElementById('menu-game-id-input').value = gameId;
     },
 
+    // One-time migration from old storage keys to "presidio_"
+    migrateStorageKeys() {
+        const keyMap = {
+            'catan_player_token': 'presidio_player_token',
+            'catan_current_game': 'presidio_current_game',
+            'catan_sound_volume': 'presidio_sound_volume',
+            'catan_backend_url': 'presidio_backend_url',
+        };
+
+        for (const [oldKey, newKey] of Object.entries(keyMap)) {
+            const value = localStorage.getItem(oldKey);
+            if (value !== null && localStorage.getItem(newKey) === null) {
+                localStorage.setItem(newKey, value);
+            }
+            localStorage.removeItem(oldKey);
+        }
+
+        // Migrate sessionStorage keys (auto_refresh, playing_as_*)
+        for (let i = 0; i < sessionStorage.length; i++) {
+            const key = sessionStorage.key(i);
+            if (key && key.startsWith('catan_')) {
+                const newKey = key.replace('catan_', 'presidio_');
+                if (sessionStorage.getItem(newKey) === null) {
+                    sessionStorage.setItem(newKey, sessionStorage.getItem(key));
+                }
+                sessionStorage.removeItem(key);
+            }
+        }
+
+        // Clean up legacy keys from even older formats
+        localStorage.removeItem('presidio_api_key');
+        localStorage.removeItem('presidio_api_url');
+    },
+
     loadSavedGameId() {
-        const savedGameId = localStorage.getItem('catan_current_game');
+        const savedGameId = localStorage.getItem('presidio_current_game');
         if (savedGameId) {
             document.getElementById('menu-game-id-input').value = savedGameId;
         }
     },
 
     async loadSavedGame() {
-        const savedGameId = localStorage.getItem('catan_current_game');
+        const savedGameId = localStorage.getItem('presidio_current_game');
         if (!savedGameId) return;
 
         // Try to restore playingAs from sessionStorage before the API call
         // so the server returns private player data
         if (!this.playingAsPlayerId) {
-            const savedPlayerId = sessionStorage.getItem(`catan_playing_as_${savedGameId}`);
+            const savedPlayerId = sessionStorage.getItem(`presidio_playing_as_${savedGameId}`);
             if (savedPlayerId) {
                 this.playingAsPlayerId = savedPlayerId;
             }
@@ -626,14 +661,23 @@ const App = {
 
     handleUrlParameters() {
         const params = new URLSearchParams(window.location.search);
+
+        // Check for accessKey (Player Token) parameter
+        const accessKey = params.get('accessKey');
+        if (accessKey) {
+            localStorage.setItem('presidio_player_token', accessKey);
+        }
+
         const gameId = params.get('game');
         const playerId = params.get('player');
 
+        // Clear URL parameters (so token doesn't linger in address bar)
+        if (accessKey || gameId) {
+            this.clearUrlParameters();
+        }
+
         // Ignore if no game parameter
         if (!gameId) return false;
-
-        // Clear URL parameters (so refresh doesn't re-trigger)
-        this.clearUrlParameters();
 
         // Populate the game ID input immediately
         document.getElementById('menu-game-id-input').value = gameId;
@@ -690,7 +734,7 @@ const App = {
     goHomeConfirmed() {
         this.closeModal('confirm-home-modal');
         this.stopAutoRefresh();
-        localStorage.removeItem('catan_current_game');
+        localStorage.removeItem('presidio_current_game');
         this.currentGame = null;
         this.currentGameId = null;
         this.possibleActions = [];
@@ -1104,14 +1148,14 @@ const App = {
     savePlayingAsPlayer(playerId) {
         if (this.currentGameId && playerId) {
             // Use sessionStorage so each browser tab can be a different player
-            sessionStorage.setItem(`catan_playing_as_${this.currentGameId}`, playerId);
+            sessionStorage.setItem(`presidio_playing_as_${this.currentGameId}`, playerId);
         }
     },
 
     loadPlayingAsPlayer() {
         if (this.currentGameId) {
             // Use sessionStorage so each browser tab can be a different player
-            const savedPlayerId = sessionStorage.getItem(`catan_playing_as_${this.currentGameId}`);
+            const savedPlayerId = sessionStorage.getItem(`presidio_playing_as_${this.currentGameId}`);
             if (savedPlayerId && this.currentGame?.players?.some(p => p.id === savedPlayerId)) {
                 return savedPlayerId;
             }

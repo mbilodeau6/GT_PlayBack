@@ -1,5 +1,5 @@
 /**
- * Azure Function proxy for the Catan backend API.
+ * Azure Function proxy for the Presidio backend API.
  * Adds the API key from environment variables and forwards requests to the backend.
  *
  * This runs as part of Azure Static Web Apps managed functions.

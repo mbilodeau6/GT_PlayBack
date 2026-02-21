@@ -1,5 +1,5 @@
 /**
- * API interaction layer for the Catan backend.
+ * API interaction layer for the Presidio backend.
  *
  * In production (Azure Static Web App): calls go through /api/proxy which adds the API key
  * In local development (localhost): calls go directly to the local backend (no key needed)
@@ -34,20 +34,12 @@ const API = {
     },
 
     saveConfig() {
-        localStorage.setItem('catan_backend_url', this.backendUrl);
+        localStorage.setItem('presidio_backend_url', this.backendUrl);
     },
 
     loadConfig() {
-        const savedUrl = localStorage.getItem('catan_backend_url');
+        const savedUrl = localStorage.getItem('presidio_backend_url');
         if (savedUrl) this.backendUrl = savedUrl;
-
-        // Migrate old config format (remove apiKey from localStorage)
-        localStorage.removeItem('catan_api_key');
-        const oldUrl = localStorage.getItem('catan_api_url');
-        if (oldUrl) {
-            localStorage.removeItem('catan_api_url');
-            // Don't migrate the old URL - let it use the new default
-        }
     },
 
     async request(method, endpoint, body = null) {

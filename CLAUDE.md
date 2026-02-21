@@ -1,4 +1,6 @@
-GT_PLAYBACK is a static web app that will be hosted as an Azure Static Web app. It is the front-end for a Settlers of Catan type game. Please check with the user if you are going to use any technology or techniques that might make this difficult or require paid Azure services.
+GT_PLAYBACK is a static web app that will be hosted as an Azure Static Web app. It is the front-end for a resource management/trading board game. The game generates a map made up of resource hexes. Each hex is assigned a value between 2 and 12 but 7 is skipped. Players can place 2 settlements and 2 roads and then collect resources from the hexes adjacent to the settlements to build additional roads, settlements and cities. The first player to reach a certain number of victory points wins. 
+
+Please check with the user if you are going to use any technology or techniques that might make this difficult or require paid Azure services.
 
 In addition to the Game which is available through index.html, there is a separate replay.html page which can be used by the development and support staff to review what happened in a finished game. It can also be used to look for problems or opportunities for improvement in the game's back-end (i.e. it isn't used to test the game UI). Although it is okay for replay to use game components, it is critical that nothing is done in support of replay that harms that usability and performance of game pley in the main UI.
 
